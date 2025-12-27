@@ -10,10 +10,6 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-// ==============================
-// Types
-// ==============================
-
 const (
 	maxNoirFileSize = 5 << 20 // 5 MB
 	configFile      = "Nargo.toml"
@@ -41,10 +37,6 @@ type WorkspaceConfig struct {
 	Members       []string `toml:"members"`
 	DefaultMember string   `toml:"default-member,omitempty"`
 }
-
-// ==============================
-// Parsing + utilities
-// ==============================
 
 // parses a nargo.toml file into a struct
 func parseNargo(filePath string) *NargoManifest {

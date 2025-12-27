@@ -11,8 +11,6 @@ type NoirProject struct {
 	Files    map[string]string // project-local .nr files
 }
 
-// findFilesRecursive walks the file tree rooted at root and returns a slice of all file paths.
-
 func (p *NoirProject) LoadFiles() error {
 	p.Files = make(map[string]string)
 	err := filepath.WalkDir(p.Root, func(path string, d fs.DirEntry, err error) error {

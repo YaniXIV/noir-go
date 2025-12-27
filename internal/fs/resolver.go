@@ -4,19 +4,11 @@ import (
 	"path/filepath"
 )
 
-// ==============================
-// Types
-// ==============================
-
 type Resolver struct {
 	visited  map[string]bool         // path → visited
 	projects map[string]*NoirProject // path → project
 	AllFiles map[string]string       // global merged files
 }
-
-// ==============================
-// Constructors
-// ==============================
 
 func NewResolver() *Resolver {
 	return &Resolver{
@@ -25,10 +17,6 @@ func NewResolver() *Resolver {
 		AllFiles: make(map[string]string),
 	}
 }
-
-// ==============================
-// Resolver (global orchestration)
-// ==============================
 
 func (r *Resolver) Resolve(root string) error {
 	abs, err := filepath.Abs(root)

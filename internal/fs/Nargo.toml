@@ -1,5 +1,7 @@
+# just a test Nargo.toml for fs_test.go
+
 [package]
-name = "trash"
+name = "Test"
 type = "bin"
 authors = [""]
 
