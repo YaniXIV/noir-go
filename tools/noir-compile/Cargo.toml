@@ -1,0 +1,9 @@
+[package]
+name = "noir-compile"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+noirc_driver = { git = "https://github.com/noir-lang/noir", package = "noirc_driver" }
+noirc_frontend = { git = "https://github.com/noir-lang/noir", package = "noirc_frontend" }
+nargo = { git = "https://github.com/noir-lang/noir", package = "nargo"}

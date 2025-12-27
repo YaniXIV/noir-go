@@ -1,0 +1,18 @@
+Testing times for compilation to see
+if my Wasm approach to compiling noir programs in golang was viable/worth 
+continuing. the results seem pretty decent tbh.
+I think the building of the virtual file system, and parsing logic eat some time up. 
+Also, I know including the rust build step is unfair. 
+
+Pure nargo
+nargo compile > time.txt  5.20s user 0.75s system 96% cpu 6.187 total
+
+Calling functions in rust + build step
+cargo run  70.77s user 1.03s system 98% cpu 1:12.92 total
+
+
+Calling go binary.
+Utilizing Wasm
+
+./main  22.97s user 2.49s system 98% cpu 25.896 total
+
