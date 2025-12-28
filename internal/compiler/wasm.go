@@ -6,79 +6,59 @@ import (
 	_ "embed"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 )
 
-/*
-//go:embed noir_compiler.wasm
+//go:embed noir-compile.wasm
 var noirWasm []byte
-*/
 
-func loadWasm() {
-	ctx := context.background()
-	r := wazero.newruntime(ctx)
-	defer r.close(ctx)
+func runWasmCompiler(wasmBytes []byte) {
+	ctx := context.Background()
 
-	// 1. instantiate wasi so println! has a host function to call
-	wasi_snapshot_preview1.mustinstantiate(ctx, r)
+	// 1. Create a new runtime
+	runtime := wazero.NewRuntime(ctx)
+	defer runtime.Close(ctx)
 
-	// 2. load the wasm
-	wasmbytes, err := os.readfile("noir-compile.wasm")
+	// 2. Instantiate WASI so the WASM module can use stdout, stderr, etc.
+	_, err := wasi_snapshot_preview1.Instantiate(ctx, runtime)
 	if err != nil {
-		log.Fatalf("failed to read wasm: %v", err)
+		log.Fatalf("failed to instantiate WASI: %v", err)
 	}
 
-	// 3. compile the module first
-	compiled, err := r.compilemodule(ctx, wasmbytes)
+	// 3. Compile the WASM module
+	compiled, err := runtime.CompileModule(ctx, wasmBytes)
 	if err != nil {
-		log.Fatalf("failed to compile: %v", err)
+		log.Fatalf("failed to compile WASM module: %v", err)
 	}
 
-	// 4. create a buffer to collect all output
-	// this will grow automatically to fit all println! calls.
-	outputbuf := new(bytes.buffer)
+	// 4. Prepare an output buffer to capture stdout/stderr
+	outputBuf := new(bytes.Buffer)
 
-	// 5. build the configuration
-	// we point stdout and stderr to the same buffer to catch logs and crashes
-	config := wazero.newmoduleconfig().
-		withstdout(outputbuf).
-		withstderr(outputbuf).
-		withsysnanotime().
-		withname("rotate").
-		withargs("rotate", "angle=90", "dir=cw")
+	// 5. Configure the module
+	config := wazero.NewModuleConfig().
+		WithStdout(outputBuf).
+		WithStderr(outputBuf)
 
-	// 6. instantiate the module
-	mod, err := r.instantiatemodule(ctx, compiled, config)
+	// 6. Instantiate the module
+	mod, err := runtime.InstantiateModule(ctx, compiled, config)
 	if err != nil {
-		log.Fatalf("failed to instantiate: %v", err)
+		log.Fatalf("failed to instantiate module: %v", err)
 	}
-	defer mod.close(ctx)
+	defer mod.Close(ctx)
 
-	// 7. call your specific function
-	fn := mod.exportedfunction("test_compile_wasm_go")
-	if fn == nil {
-		log.Fatalf("function not found")
-	}
-
-	_, err = fn.call(ctx)
-	if err != nil {
-		// even if it fails, the buffer might have captured the "why"
-		fmt.Printf("execution error: %v\n", err)
+	// 7. Optionally call an exported function
+	fn := mod.ExportedFunction("test_compile_wasm_go")
+	if fn != nil {
+		_, err := fn.Call(ctx)
+		if err != nil {
+			fmt.Printf("function call error: %v\n", err)
+		}
 	}
 
-	// 8. print everything at the end
+	// 8. Print output
 	fmt.Println("--- start of wasm logs ---")
-	if outputbuf.len() == 0 {
-		fmt.Println("(no output captured)")
-	} else {
-		fmt.Print(outputbuf.string())
-	}
+	fmt.Print(outputBuf.String())
 	fmt.Println("--- end of wasm logs ---")
-}
-
-func runWasmCompiler(noirWasm []byte, Input any) {
-
 }
