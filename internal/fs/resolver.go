@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"maps"
 	"path/filepath"
 )
 
@@ -42,11 +43,8 @@ func (r *Resolver) Resolve(root string) error {
 	}
 
 	// merge files globally
-	for path, contents := range project.Files {
-		r.AllFiles[path] = contents
-	}
+	maps.Copy(r.AllFiles, project.Files) // Copies all key-value pairs from src to dst
 
-	// recurse dependencies (SIMPLE version)
 	for _, dep := range manifest.Dependencies {
 		if path, ok := dep["path"]; ok {
 			next := filepath.Join(abs, path)

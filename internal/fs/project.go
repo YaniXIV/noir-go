@@ -12,7 +12,6 @@ type NoirProject struct {
 }
 
 func (p *NoirProject) LoadFiles() error {
-	p.Files = make(map[string]string)
 	err := filepath.WalkDir(p.Root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
