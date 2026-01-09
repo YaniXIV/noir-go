@@ -15,6 +15,7 @@ import (
 
 // probably not optimal abstraction yet, work on this later.
 type WasmType int
+type WasmLoader func() (*WasmObject, error)
 
 const (
 	Compiler WasmType = iota
@@ -22,27 +23,54 @@ const (
 	Verifier
 )
 
-type WasmManager struct {
-	Once    sync.Once
-	Object  WasmObject
-	wasmErr error
+type WasmObject struct {
+	wasmType  asmType
+	wasmBytes []byte
+}
+type wasmInstance struct {
+	once   nc.Once
+	object  *WasmObject
+	err    ror
 }
 
-type WasmObject struct {
-	Type      WasmType
-	wasmBytes []byte
+type WasmManager struct {
+	mu        sync.Mutex
+	instances map[WasmType]*wasmInstance
 }
 
 func NewWasmManager() *WasmManager {
-	return &WasmManager{}
+	return &WasmManager{
+		instances: make(map[WasmType]*wasmInstance),
+	}
 }
 
-func (m *WasmManager) get(*WasmObject) {
-	m.Once.Do(func() {
-		// Add wasm initial ization function  here.
-	})
-
+func initializeWasm(t WasmType) asmLoader 
+	switch t {
+	case Compiler:
+		return loadCompiler
+	case Prover:
+		return loadProver
+	case Verifier:
+		return loadVerifier
+	default:
+		//returning functions is really cool. But ehh, I don't think this will work well lol, the error handleing is weird now :)
+		//plz fix.
+		fmt.Errorf("unknown wasm type: %v", t)
+		return loadError
+	}
 }
+
+	//todo, load in so me dummy wasm 
+	return &WasmObject{wasmType: Compiler}, nil
+}
+func loadProver() (*WasmObject, error) {
+	return &WasmObje ct{wasmType: Prover} , nil
+}
+func loadVerifier() (*WasmObject, error) {
+	return &WasmObject {wasmType: Verifier} , nil
+}
+func loadError() (*WasmObject, error) {
+	return nil, fmt .Errorf("unknown was m type: %v")
 
 //go:embed noir-compile.wasm
 var noirWasm []byte
