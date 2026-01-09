@@ -39,27 +39,22 @@ type WorkspaceConfig struct {
 }
 
 // parses a nargo.toml file into a struct
-func parseNargo(filePath string) *NargoManifest {
+func parseNargo(fp string) (*NargoManifest, error) {
 	var nargoFile NargoManifest
 
-	filePath = filepath.Join(filePath, configFile)
-	dir, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("Current directory:", dir)
+	filePath := filepath.Join(fp, configFile)
 	fileExists := fileExists(filePath)
 	if !fileExists {
-		log.Fatalf("Invalid file path to Nargo.toml \n%v", filePath)
+		return nil, fmt.Errorf("cannot find a nargo.toml for %v", fp)
 	} else {
 		log.Println("this file exists!")
 	}
 
 	if _, err := toml.DecodeFile(filePath, &nargoFile); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	fmt.Println(nargoFile)
-	return &nargoFile
+	return &nargoFile, nil
 }
 
 // read a singular .nr file into memory.

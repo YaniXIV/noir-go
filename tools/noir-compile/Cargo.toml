@@ -7,3 +7,6 @@ edition = "2024"
 noirc_driver = { git = "https://github.com/noir-lang/noir", package = "noirc_driver" }
 noirc_frontend = { git = "https://github.com/noir-lang/noir", package = "noirc_frontend" }
 nargo = { git = "https://github.com/noir-lang/noir", package = "nargo"}
+serde = { version = "1.0", features = ["derive"] }
+rmp-serde = "0.15"
+bincode = "1.3"

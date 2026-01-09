@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"github.com/vmihailenco/msgpack/v5"
 	"maps"
 	"path/filepath"
 )
@@ -30,7 +31,10 @@ func (r *Resolver) Resolve(root string) error {
 	}
 	r.visited[abs] = true
 
-	manifest := parseNargo(abs)
+	manifest, err := parseNargo(abs)
+	if err != nil {
+		return err
+	}
 
 	project := &NoirProject{
 		Root:     abs,
@@ -55,4 +59,12 @@ func (r *Resolver) Resolve(root string) error {
 	}
 
 	return nil
+}
+
+func (r *Resolver) Serialize() ([]byte, error) {
+	b, err := msgpack.Marshal(r.AllFiles)
+	if err != nil {
+		return nil, err
+	}
+	return b, err
 }

@@ -7,9 +7,42 @@ import (
 	"fmt"
 	"log"
 
+	"sync"
+
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 )
+
+// probably not optimal abstraction yet, work on this later.
+type WasmType int
+
+const (
+	Compiler WasmType = iota
+	Prover
+	Verifier
+)
+
+type WasmManager struct {
+	Once    sync.Once
+	Object  WasmObject
+	wasmErr error
+}
+
+type WasmObject struct {
+	Type      WasmType
+	wasmBytes []byte
+}
+
+func NewWasmManager() *WasmManager {
+	return &WasmManager{}
+}
+
+func (m *WasmManager) get(*WasmObject) {
+	m.Once.Do(func() {
+		// Add wasm initial ization function  here.
+	})
+
+}
 
 //go:embed noir-compile.wasm
 var noirWasm []byte

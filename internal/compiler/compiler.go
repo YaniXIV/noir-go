@@ -1,11 +1,21 @@
 package compiler
 
 import (
-	"fmt"
+	"noir-go/internal/fs"
 )
 
-func Compile(Input any) {
-	fmt.Println(Input)
+// simple compile function.
+func Compile(projectPath string) {
 	runWasmCompiler(noirWasm)
+
+	r := fs.NewResolver()
+
+	r.Resolve(projectPath)
+	projectData, err := r.Serialize()
+	if err != nil {
+		panic(err)
+	}
+
+	runWasmCompiler(projectData)
 
 }
