@@ -17,6 +17,9 @@ import (
 type WasmType int
 type WasmLoader func() (*WasmObject, error)
 
+//go:embed noir-compile.wasm
+var noirWasm []byte
+
 const (
 	Compiler WasmType = iota
 	Prover
@@ -24,56 +27,77 @@ const (
 )
 
 type WasmObject struct {
-	wasmType  asmType
-	wasmBytes []byte
+	Type  WasmType
+	Bytes []byte
 }
 type wasmInstance struct {
-	once   nc.Once
-	object  *WasmObject
-	err    ror
+	once   sync.Once
+	object WasmObject
+	err    error
 }
 
 type WasmManager struct {
 	mu        sync.Mutex
 	instances map[WasmType]*wasmInstance
+	loaders   map[WasmType]WasmLoader
 }
 
 func NewWasmManager() *WasmManager {
 	return &WasmManager{
 		instances: make(map[WasmType]*wasmInstance),
+		loaders: map[WasmType]WasmLoader{
+			Compiler: loadCompiler,
+			Prover:   loadProver,
+			Verifier: loadVerifier,
+		},
 	}
 }
 
-func initializeWasm(t WasmType) asmLoader 
-	switch t {
-	case Compiler:
-		return loadCompiler
-	case Prover:
-		return loadProver
-	case Verifier:
-		return loadVerifier
-	default:
-		//returning functions is really cool. But ehh, I don't think this will work well lol, the error handleing is weird now :)
-		//plz fix.
-		fmt.Errorf("unknown wasm type: %v", t)
-		return loadError
-	}
+func InitializeWasmInstance() wasmInstance {
+	return &wasmInstance{}
 }
 
-	//todo, load in so me dummy wasm 
-	return &WasmObject{wasmType: Compiler}, nil
+func (w *WasmManger) Warmup() error {
+	go w.Get(Compiler)
+	go w.Get(Prover)
+	go w.Get(Verifier)
+
 }
+
+func (w *WasmManager) Get(t WasmType) (*WasmObject, error) {
+	w.mu.Lock()
+	inst, ok := w.instances[t]
+	if !ok {
+		inst = &wasmIntance{}
+		w.instances[t] = inst
+	}
+
+	loader := w.loaders[t]
+	w.mu.Unlock()
+
+	inst.once.Do(func() {
+		inst.object, inst.err = loader()
+	})
+
+	return inst.object, inst.err
+}
+
+func loadCompiler() (*WasmObject, error) {
+
+}
+
 func loadProver() (*WasmObject, error) {
-	return &WasmObje ct{wasmType: Prover} , nil
+	bytes := make([]byte, 44)
+	return &WasmObject{Prover, bytes}, nil
 }
 func loadVerifier() (*WasmObject, error) {
-	return &WasmObject {wasmType: Verifier} , nil
+	bytes := make([]byte, 44)
+	return &WasmObject{Verifier, bytes}, nil
 }
 func loadError() (*WasmObject, error) {
-	return nil, fmt .Errorf("unknown was m type: %v")
+	return nil, fmt.Errorf("unknown was m type: %v")
 
-//go:embed noir-compile.wasm
-var noirWasm []byte
+}
 
 func runWasmCompiler(wasmBytes []byte) {
 	ctx := context.Background()
