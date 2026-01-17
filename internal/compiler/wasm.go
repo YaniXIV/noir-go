@@ -15,10 +15,10 @@ import (
 
 // probably not optimal abstraction yet, work on this later.
 type WasmType int
-type WasmLoader func() (*WasmObject, error)
+type WasmLoader func(*WasmManager) (*WasmObject, error)
 
 //go:embed noir-compile.wasm
-var noirWasm []byte
+var noirCompilerWasm []byte
 
 const (
 	Compiler WasmType = iota
@@ -27,40 +27,59 @@ const (
 )
 
 type WasmObject struct {
-	Type  WasmType
-	Bytes []byte
+	Type     WasmType
+	Compiled wazero.CompiledModule
 }
 type wasmInstance struct {
 	once   sync.Once
-	object WasmObject
+	object *WasmObject
 	err    error
 }
 
 type WasmManager struct {
 	mu        sync.Mutex
+	runtime   wazero.Runtime
 	instances map[WasmType]*wasmInstance
 	loaders   map[WasmType]WasmLoader
 }
 
-func NewWasmManager() *WasmManager {
+func NewWasmManager() (*WasmManager, error) {
+	ctx := context.Background()
+	r := wazero.NewRuntime(ctx)
+	if _, err := wasi_snapshot_preview1.Instantiate(ctx, r); err != nil {
+		return nil, err
+	}
+
 	return &WasmManager{
+
+		runtime:   r,
 		instances: make(map[WasmType]*wasmInstance),
 		loaders: map[WasmType]WasmLoader{
 			Compiler: loadCompiler,
 			Prover:   loadProver,
 			Verifier: loadVerifier,
 		},
-	}
+	}, nil
 }
 
-func InitializeWasmInstance() wasmInstance {
+func InitializeWasmInstance() *wasmInstance {
 	return &wasmInstance{}
 }
 
-func (w *WasmManger) Warmup() error {
-	go w.Get(Compiler)
-	go w.Get(Prover)
-	go w.Get(Verifier)
+func (w *WasmManager) Warmup() error {
+	_, errCompiler := w.Get(Compiler)
+	if errCompiler != nil {
+		panic(errCompiler)
+	}
+	_, errProver := w.Get(Prover)
+	if errProver != nil {
+		panic(errProver)
+	}
+	_, errVerifier := w.Get(Verifier)
+	if errVerifier != nil {
+		panic(errVerifier)
+	}
+	return nil
 
 }
 
@@ -68,35 +87,21 @@ func (w *WasmManager) Get(t WasmType) (*WasmObject, error) {
 	w.mu.Lock()
 	inst, ok := w.instances[t]
 	if !ok {
-		inst = &wasmIntance{}
+		inst = &wasmInstance{}
 		w.instances[t] = inst
 	}
 
-	loader := w.loaders[t]
-	w.mu.Unlock()
+	loader, ok := w.loaders[t]
+	if !ok {
+		w.mu.Unlock()
 
-	inst.once.Do(func() {
-		inst.object, inst.err = loader()
-	})
+		inst.once.Do(func() {
+			inst.object, inst.err = loader(w)
+		})
 
-	return inst.object, inst.err
-}
-
-func loadCompiler() (*WasmObject, error) {
-
-}
-
-func loadProver() (*WasmObject, error) {
-	bytes := make([]byte, 44)
-	return &WasmObject{Prover, bytes}, nil
-}
-func loadVerifier() (*WasmObject, error) {
-	bytes := make([]byte, 44)
-	return &WasmObject{Verifier, bytes}, nil
-}
-func loadError() (*WasmObject, error) {
-	return nil, fmt.Errorf("unknown was m type: %v")
-
+		return inst.object, inst.err
+	}
+	return inst.object, nil
 }
 
 func runWasmCompiler(wasmBytes []byte) {
