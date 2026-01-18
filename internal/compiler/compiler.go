@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/tetratelabs/wazero"
+	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 	"noir-go/internal/fs"
 )
 
@@ -51,6 +52,11 @@ func (w *WasmManager) CompileProgram(projectPath string) error {
 		panic(errSerialize)
 	}
 	fmt.Println(projectData, " <-- Serialized Project data!!! ")
+
+	alloc := mod.ExportedFunction("alloc")
+	if alloc == nil {
+		return fmt.Errorf("exported Function Error ")
+	}
 
 	fn := mod.ExportedFunction("test_compile_wasm_go")
 	if fn == nil {
