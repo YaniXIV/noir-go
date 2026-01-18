@@ -1,6 +1,0 @@
-[package]
-name = "compiler"
-type = "bin"
-authors = [""]
-
-[dependencies]
