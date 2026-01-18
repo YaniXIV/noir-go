@@ -87,20 +87,26 @@ func (w *WasmManager) Get(t WasmType) (*WasmObject, error) {
 	w.mu.Lock()
 	inst, ok := w.instances[t]
 	if !ok {
+		//fmt.Printf("%v Does not yet exist in map", t)
 		inst = &wasmInstance{}
 		w.instances[t] = inst
+		//fmt.Println("key: value")
+		//fmt.Println(t, w.instances[t])
 	}
 
 	loader, ok := w.loaders[t]
 	if !ok {
+		//fmt.Println("Loader does not exist yet!")
 		w.mu.Unlock()
-
-		inst.once.Do(func() {
-			inst.object, inst.err = loader(w)
-		})
-
-		return inst.object, inst.err
+		return nil, fmt.Errorf("no loader found for wasm type %v", t)
 	}
+
+	w.mu.Unlock()
+
+	inst.once.Do(func() {
+		inst.object, inst.err = loader(w)
+		fmt.Println("Loader: ", loader)
+	})
 	return inst.object, nil
 }
 
