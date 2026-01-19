@@ -1,3 +1,4 @@
+use nargo::foreign_calls::print;
 use nargo::parse_all;
 use noirc_driver::{CompileOptions, compile_main, file_manager_with_stdlib, prepare_crate};
 use noirc_frontend::hir::Context;
@@ -47,7 +48,10 @@ fn main() {
     let mut bytes = rmp_serde::to_vec(&my_map).unwrap();
     println!("Serialized bytes: {bytes:?}");
     let ptr: *const u8 = bytes.as_mut_ptr();
-    compile_wasm(ptr, bytes.len())
+    compile_wasm(ptr, bytes.len());
+
+    let x = alloc(128);
+    dealloc(x, 128);
 }
 //fn main(x: Field, y: pub Field) {
 //assert(x != y);
@@ -97,8 +101,10 @@ pub extern "C" fn compile_wasm(ptr: *const u8, len: usize) {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn alloc(size: usize) -> *mut u8 {
+    println!("{:?} <-- Rust size size ", size);
     let mut buf = Vec::with_capacity(size);
     let ptr = buf.as_mut_ptr();
+    println!("{:?} <-- Rust size ptr ", ptr);
     std::mem::forget(buf);
     ptr
 }

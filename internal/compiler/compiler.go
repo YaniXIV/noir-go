@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/tetratelabs/wazero"
-	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 	"noir-go/internal/fs"
 )
 
@@ -54,14 +53,23 @@ func (w *WasmManager) CompileProgram(projectPath string) error {
 	fmt.Println(projectData, " <-- Serialized Project data!!! ")
 
 	alloc := mod.ExportedFunction("alloc")
-	if alloc == nil {
+	fn := mod.ExportedFunction("test_compile_wasm_go")
+
+	if alloc == nil || fn == nil {
 		return fmt.Errorf("exported Function Error ")
 	}
 
-	fn := mod.ExportedFunction("test_compile_wasm_go")
-	if fn == nil {
-		return fmt.Errorf("exported Function Error ")
+	size := uint64(len(projectData))
+
+	results, err := alloc.Call(ctx, size)
+	if err != nil {
+		return err
 	}
+
+	ptr := uint32(results[0]) // wasm32 → u32 pointer
+	fmt.Printf("%x <-- HERE IS THE POINTER TO MEM Golang Side ", ptr)
+	fmt.Println(size, " <-- here is the size of the allocated data! Golang Side ")
+
 	fmt.Println("--- Start of wasm logs ---")
 	fmt.Println(outputBuf.String())
 	fmt.Println("--- End of wasm logs ---")

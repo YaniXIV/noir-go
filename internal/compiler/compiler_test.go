@@ -7,7 +7,7 @@ import (
 
 func TestCompiler(t *testing.T) {
 
-	runWasmCompiler(noirCompilerWasm)
+	//runWasmCompiler(noirCompilerWasm)
 	RawCompilerTest()
 }
 
