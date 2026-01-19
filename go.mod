@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
