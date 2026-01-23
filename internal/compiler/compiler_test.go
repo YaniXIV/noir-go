@@ -19,12 +19,17 @@ func RawCompilerTest() {
 		panic(err)
 	}
 	fmt.Println("wasmManger instantiated", w.instances[Compiler])
-	errCompile := w.CompileProgram(".")
+	AcirBlob, errCompile := w.CompileProgram(".")
 	fmt.Println("Compiler instantiated", w.instances[Compiler])
 	if errCompile != nil {
 
 		fmt.Println("Compiler failed to get", w.instances[Compiler])
 		panic(errCompile)
+	}
+	if AcirBlob == nil {
+		//panic("AcirBlob is nil.")
+		return
+
 	}
 
 }

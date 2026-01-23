@@ -73,31 +73,83 @@ pub extern "C" fn test_compile_wasm_go() {
 }",
     )
 }
-
 #[unsafe(no_mangle)]
-pub extern "C" fn compile_wasm(ptr: *const u8, len: usize) {
+pub extern "C" fn SerializationTest(ptr: *const u8, len: usize) -> u8 {
+    println!("made it into funciton Rust side");
     let data: &[u8] = unsafe { std::slice::from_raw_parts(ptr, len) };
-    let map: HashMap<String, String> = match rmp_serde::from_slice(data) {
-        Ok(map) => map,
-        Err(err) => {
-            panic!("Failed to parse File Map: {err:?}")
+    let map: HashMap<String, String> = rmp_serde::from_slice(data).expect("Serializing garbage");
+    /*
+        for (key, value) in map {
+            println!("Key: {}\n Value: {}", key, value);
         }
-    };
+    */
 
     let mut fm = file_manager_with_stdlib(Path::new(""));
 
     for (key, value) in map {
         fm.add_file_with_source(Path::new(&key), value);
     }
-
     let parsed_files = parse_all(&fm);
-    let mut context = Context::new(fm, parsed_files);
-    let crate_id = prepare_crate(&mut context, Path::new("/main.nr"));
-    let options = CompileOptions::default();
-    let result = compile_main(&mut context, crate_id, &options, None);
 
+    let mut context = Context::new(fm, parsed_files);
+    let options = CompileOptions::default();
+    let crate_id = prepare_crate(&mut context, Path::new("/main.nr"));
+    let result = compile_main(&mut context, crate_id, &options, None);
     println!("{:?}", result);
+    0
 }
+
+#[unsafe(no_mangle)]
+pub extern "C" fn compile_wasm(ptr: *const u8, len: usize) -> (*const u8, usize) {
+    println!("made it into funciton Rust side");
+    let data: &[u8] = unsafe { std::slice::from_raw_parts(ptr, len) };
+    let map: HashMap<String, String> = rmp_serde::from_slice(data).expect("Serializing garbage");
+    //for (key, value) in map {
+    //  println!("{}: {}", key, value)
+    //}
+    /*
+        for (key, value) in map {
+            fm.add_file_with_source(Path::new(&key), value);
+        }
+    */
+
+    return (ptr, len);
+}
+/*
+#[unsafe(no_mangle)]
+pub extern "C" fn compile_wasm(ptr: *const u8, len: usize) {
+    let data: &[u8] = unsafe { std::slice::from_raw_parts(ptr, len) };
+    let map: HashMap<String, String> = rmp_serde::from_slice(data).expect("deserialize file map");
+    for (key, value) in map {
+        println!("{}: {}", key, value);
+    }
+
+    /*
+        let map: HashMap<String, String> = match rmp_serde::from_slice(data) {
+            Ok(map) => map,
+            Err(err) => {
+                panic!("Failed to parse File Map: {err:?}")
+            }
+        };
+    */
+    /*
+
+        let mut fm = file_manager_with_stdlib(Path::new(""));
+
+        for (key, value) in map {
+            fm.add_file_with_source(Path::new(&key), value);
+        }
+
+        let parsed_files = parse_all(&fm);
+        let mut context = Context::new(fm, parsed_files);
+        let crate_id = prepare_crate(&mut context, Path::new("/main.nr"));
+        let options = CompileOptions::default();
+        let result = compile_main(&mut context, crate_id, &options, None);
+
+        println!("{:?}", result);
+    */
+}
+*/
 
 #[unsafe(no_mangle)]
 pub extern "C" fn alloc(size: usize) -> *mut u8 {

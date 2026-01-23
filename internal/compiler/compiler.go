@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"noir-go/internal/fs"
 	"unsafe"
 
 	"github.com/tetratelabs/wazero"
 )
+
+type AcirBlob []byte
 
 // simple compile function.
 func Compile(projectPath string) {
@@ -26,13 +29,13 @@ func Compile(projectPath string) {
 
 }
 
-func (w *WasmManager) CompileProgram(projectPath string) error {
+func (w *WasmManager) CompileProgram(projectPath string) ([]byte, error) {
 	obj, err := w.Get(Compiler)
 	if obj == nil {
 		fmt.Println("OBJECT IS INVALID")
 	}
 	if err != nil {
-		return err
+		return nil, err
 	}
 	ctx := context.Background()
 	outputBuf := new(bytes.Buffer)
@@ -46,49 +49,79 @@ func (w *WasmManager) CompileProgram(projectPath string) error {
 		panic(errInstantiate)
 	}
 	//defer mod.Close(ctx)
+
+	//resolver
 	r := fs.NewResolver()
 	r.Resolve(projectPath)
 	projectData, errSerialize := r.Serialize()
 	if errSerialize != nil {
 		panic(errSerialize)
 	}
-	fmt.Println(projectData, " <-- Serialized Project data!!! ")
+	//fmt.Println(projectData, " <-- Serialized Project data!!! ")
 
+	//funciton exports
 	alloc := mod.ExportedFunction("alloc")
-	fn := mod.ExportedFunction("test_compile_wasm_go")
+	dealloc := mod.ExportedFunction("dealloc")
+	Compiler := mod.ExportedFunction("compile_wasm")
+	SerializationTest := mod.ExportedFunction("SerializationTest")
 
-	if alloc == nil || fn == nil {
-		return fmt.Errorf("exported Function Error ")
+	if alloc == nil || Compiler == nil || dealloc == nil || SerializationTest == nil {
+		return nil, fmt.Errorf("exported Function Error ")
 	}
 
-	//cast uint64 cause wazero api boundry
+	// Call to alloc rust space.
 	size := uint64(len(projectData))
-
+	log.Println("length", size)
 	results, err := alloc.Call(ctx, size)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	log.Println("Bytes Allocated!", size)
+	ptr := results[0]
+	mem := mod.Memory()
+	ok := mem.Write(uint32(ptr), projectData)
+	if !ok {
+		return nil, fmt.Errorf("Write error to wams mem.")
 	}
 
-	//get pointer result cast back to uint32
-	ptr := uintptr(results[0]) // wasm32 → u32 pointer
-	writeBytes(ptr, projectData)
-	CompilerData, CompilerErr := fn.Call(ctx, uint64(ptr), size)
-	if CompilerErr != nil {
-		return CompilerErr
+	//Call to Serialization test. Args passed, size, length.
+	SerializationData, serializationErr := SerializationTest.Call(ctx, uint64(ptr), uint64(size))
+
+	if serializationErr != nil {
+		return nil, err
+
 	}
-	CompilerPtr := CompilerData[0]
 
-	fmt.Printf("%x <-- HERE IS THE POINTER TO MEM Golang Side ", ptr)
-	fmt.Println(size, " <-- here is the size of the allocated data! Golang Side ")
+	if SerializationData[0] != 0 {
+		fmt.Println("function didn't reach the end! weird")
+	}
 
+	/*
+		//Call to Compiler. Args passed, size, length....
+		CompilerData, CompilerErr := Compiler.Call(ctx, uint64(ptr), uint64(size))
+		if CompilerErr != nil {
+			return nil, CompilerErr
+		}
+		CompilerOffset := uint32(CompilerData[0])
+		CompilerLength := uint32(CompilerData[1])
+
+		AcirBlob := make([]byte, CompilerLength)
+		AcirBlob, ok = mem.Read(CompilerOffset, CompilerLength)
+		fmt.Printf("%x <-- HERE IS THE POINTER TO MEM Golang Side ", ptr)
+		fmt.Println(size, " <-- here is the size of the allocated data! Golang Side ")
+	*/
+
+	mod.Close(ctx)
 	fmt.Println("--- Start of wasm logs ---")
 	fmt.Println(outputBuf.String())
 	fmt.Println("--- End of wasm logs ---")
 
-	return nil
+	//fmt.Printf("Here are the Acir bytes From Golang!\n%v\n", AcirBlob)
+
+	return nil, nil
 }
 
-// read the data back out, need lenght need ptr.... what else? hmm.
+// Don't use this function
 func readBytes(addr uintptr, size int) ([]byte, error) {
 	if size < 1 {
 		return nil, fmt.Errorf("data size cannot be < 1")
@@ -103,7 +136,7 @@ func readBytes(addr uintptr, size int) ([]byte, error) {
 
 }
 
-// probably should do some size verification here, seems dangerous but yolo I guess.
+// Don't use this function
 func writeBytes(addr uintptr, data []byte) {
 	dst := unsafe.Slice((*byte)(unsafe.Pointer(addr)), len(data))
 	copy(dst, data)

@@ -1,0 +1,30 @@
+starting program
+wasmManger instantiated <nil>
+Loader:  0x10511eb40
+2026/01/22 17:19:36 this file exists!
+{map[authors:[] name:compiler type:bin] <nil> map[]}
+2026/01/22 17:19:36 length 209
+2026/01/22 17:19:36 Bytes Allocated! 209
+--- FAIL: TestCompiler (2.00s)
+panic: runtime error: index out of range [0] with length 0 [recovered]
+	panic: runtime error: index out of range [0] with length 0
+
+goroutine 7 [running]:
+testing.tRunner.func1.2({0x105217dc0, 0x1400052b3e0})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/testing/testing.go:1734 +0x1ac
+testing.tRunner.func1()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/testing/testing.go:1737 +0x334
+panic({0x105217dc0?, 0x1400052b3e0?})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/panic.go:792 +0x124
+noir-go/internal/compiler.(*WasmManager).CompileProgram(0x140000116e0, {0x10519c580, 0x1})
+	/Users/yani/noir-go/internal/compiler/compiler.go:91 +0x9c0
+noir-go/internal/compiler.RawCompilerTest()
+	/Users/yani/noir-go/internal/compiler/compiler_test.go:22 +0xe4
+noir-go/internal/compiler.TestCompiler(0x14000003880?)
+	/Users/yani/noir-go/internal/compiler/compiler_test.go:11 +0x1c
+testing.tRunner(0x14000003880, 0x10523c3f0)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/testing/testing.go:1792 +0xe4
+created by testing.(*T).Run in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/testing/testing.go:1851 +0x374
+exit status 2
+FAIL	noir-go/internal/compiler	2.008s
