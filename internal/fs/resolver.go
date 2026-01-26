@@ -1,15 +1,18 @@
 package fs
 
 import (
+	"fmt"
 	"github.com/vmihailenco/msgpack/v5"
 	"maps"
 	"path/filepath"
+	"strings"
 )
 
 type Resolver struct {
 	visited  map[string]bool         // path → visited
 	projects map[string]*NoirProject // path → project
 	AllFiles map[string]string       // global merged files
+	crate    string                  //Crate name
 }
 
 func NewResolver() *Resolver {
@@ -17,6 +20,7 @@ func NewResolver() *Resolver {
 		visited:  make(map[string]bool),
 		projects: make(map[string]*NoirProject),
 		AllFiles: make(map[string]string),
+		crate:    "",
 	}
 }
 
@@ -46,6 +50,25 @@ func (r *Resolver) Resolve(root string) error {
 		return err
 	}
 
+	var crateName string
+	var libName string
+	if r.crate == "" {
+		for k := range project.Files {
+			if strings.Contains(k, "/main.nr") {
+				crateName = k
+			}
+			if strings.Contains(k, "/lib.nr") {
+				libName = k
+			}
+		}
+		if crateName != "" {
+			r.crate = crateName
+		} else if libName != "" {
+			r.crate = libName
+		} else {
+			return fmt.Errorf("Project root must contain\nmain.nr\nor\nlib.nr")
+		}
+	}
 	// merge files globally
 	maps.Copy(r.AllFiles, project.Files) // Copies all key-value pairs from src to dst
 
@@ -62,6 +85,7 @@ func (r *Resolver) Resolve(root string) error {
 }
 
 func (r *Resolver) Serialize() ([]byte, error) {
+	r.AllFiles["CrateName"] = r.crate
 	b, err := msgpack.Marshal(r.AllFiles)
 	if err != nil {
 		return nil, err

@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+	"log"
 	"testing"
 )
 
@@ -28,8 +29,9 @@ func RawCompilerTest() {
 	}
 	if AcirBlob == nil {
 		//panic("AcirBlob is nil.")
-		return
+		//return
 
 	}
+	log.Println("Test completes")
 
 }

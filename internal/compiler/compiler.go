@@ -63,9 +63,9 @@ func (w *WasmManager) CompileProgram(projectPath string) ([]byte, error) {
 	alloc := mod.ExportedFunction("alloc")
 	dealloc := mod.ExportedFunction("dealloc")
 	Compiler := mod.ExportedFunction("compile_wasm")
-	SerializationTest := mod.ExportedFunction("SerializationTest")
+	Serialization := mod.ExportedFunction("SerializationTest")
 
-	if alloc == nil || Compiler == nil || dealloc == nil || SerializationTest == nil {
+	if alloc == nil || Compiler == nil || dealloc == nil || Serialization == nil {
 		return nil, fmt.Errorf("exported Function Error ")
 	}
 
@@ -81,20 +81,24 @@ func (w *WasmManager) CompileProgram(projectPath string) ([]byte, error) {
 	mem := mod.Memory()
 	ok := mem.Write(uint32(ptr), projectData)
 	if !ok {
-		return nil, fmt.Errorf("Write error to wams mem.")
+		return nil, fmt.Errorf("Write error to wasm mem.")
 	}
 
 	//Call to Serialization test. Args passed, size, length.
-	SerializationData, serializationErr := SerializationTest.Call(ctx, uint64(ptr), uint64(size))
+	SerializationData, serializationErr := Serialization.Call(ctx, uint64(ptr), uint64(size))
 
+	log.Println("Serialization Passes?")
 	if serializationErr != nil {
-		return nil, err
+		fmt.Println("Serialization Error!")
+		return nil, serializationErr
 
 	}
 
 	if SerializationData[0] != 0 {
 		fmt.Println("function didn't reach the end! weird")
+		fmt.Println(SerializationData[0])
 	}
+	fmt.Println("What is going on? ", SerializationData[0])
 
 	/*
 		//Call to Compiler. Args passed, size, length....
