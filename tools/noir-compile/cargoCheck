@@ -1,0 +1,23 @@
+    Checking noir-compile v0.1.0 (/Users/yani/noir-go/tools/noir-compile)
+warning: unused import: `acvm::acir::circuit::ExpressionWidth`
+ --> src/main.rs:2:5
+  |
+2 | use acvm::acir::circuit::ExpressionWidth;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+error[E0308]: mismatched types
+   --> src/main.rs:119:63
+    |
+119 | pub extern "C" fn compile_wasm(ptr: *const u8, len: usize) -> (*const u8, usize) {
+    |                   ------------                                ^^^^^^^^^^^^^^^^^^ expected `(*const u8, usize)`, found `()`
+    |                   |
+    |                   implicitly returns `()` as its body has no tail or `return` expression
+    |
+    = note:  expected tuple `(*const u8, usize)`
+            found unit type `()`
+
+For more information about this error, try `rustc --explain E0308`.
+warning: `noir-compile` (bin "noir-compile") generated 1 warning
+error: could not compile `noir-compile` (bin "noir-compile") due to 1 previous error; 1 warning emitted

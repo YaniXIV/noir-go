@@ -63,9 +63,9 @@ func (w *WasmManager) CompileProgram(projectPath string) ([]byte, error) {
 	alloc := mod.ExportedFunction("alloc")
 	dealloc := mod.ExportedFunction("dealloc")
 	Compiler := mod.ExportedFunction("compile_wasm")
-	Serialization := mod.ExportedFunction("SerializationTest")
+	//Serialization := mod.ExportedFunction("SerializationTest")
 
-	if alloc == nil || Compiler == nil || dealloc == nil || Serialization == nil {
+	if alloc == nil || Compiler == nil || dealloc == nil {
 		return nil, fmt.Errorf("exported Function Error ")
 	}
 
@@ -84,36 +84,43 @@ func (w *WasmManager) CompileProgram(projectPath string) ([]byte, error) {
 		return nil, fmt.Errorf("Write error to wasm mem.")
 	}
 
-	//Call to Serialization test. Args passed, size, length.
-	SerializationData, serializationErr := Serialization.Call(ctx, uint64(ptr), uint64(size))
-
-	log.Println("Serialization Passes?")
-	if serializationErr != nil {
-		fmt.Println("Serialization Error!")
-		return nil, serializationErr
-
-	}
-
-	if SerializationData[0] != 0 {
-		fmt.Println("function didn't reach the end! weird")
-		fmt.Println(SerializationData[0])
-	}
-	fmt.Println("What is going on? ", SerializationData[0])
-
 	/*
-		//Call to Compiler. Args passed, size, length....
-		CompilerData, CompilerErr := Compiler.Call(ctx, uint64(ptr), uint64(size))
-		if CompilerErr != nil {
-			return nil, CompilerErr
-		}
-		CompilerOffset := uint32(CompilerData[0])
-		CompilerLength := uint32(CompilerData[1])
+		//Call to Serialization test. Args passed, size, length.
+		SerializationData, serializationErr := Serialization.Call(ctx, uint64(ptr), uint64(size))
 
-		AcirBlob := make([]byte, CompilerLength)
-		AcirBlob, ok = mem.Read(CompilerOffset, CompilerLength)
-		fmt.Printf("%x <-- HERE IS THE POINTER TO MEM Golang Side ", ptr)
-		fmt.Println(size, " <-- here is the size of the allocated data! Golang Side ")
+		log.Println("Serialization Passes?")
+		if serializationErr != nil {
+			fmt.Println("Serialization Error!")
+			return nil, serializationErr
+
+		}
+
+		if SerializationData[0] != 0 {
+			fmt.Println("function didn't reach the end! weird")
+			fmt.Println(SerializationData[0])
+		}
+		fmt.Println("What is going on? ", SerializationData[0])
 	*/
+
+	//Call to Compiler. Args passed, size, length....
+	//CompilerData, CompilerErr := Compiler.Call(ctx, uint64(ptr), uint64(size))
+	_, CompilerErr := Compiler.Call(ctx, uint64(ptr), uint64(size))
+	if CompilerErr != nil {
+		fmt.Println("Compiler Failed", CompilerErr)
+		return nil, nil
+	}
+	_, deallocErr := dealloc.Call(ctx, uint64(ptr), uint64(size))
+	if deallocErr != nil {
+		panic(deallocErr)
+	}
+	//CompilerOffset := uint32(CompilerData[0])
+	//CompilerLength := uint32(CompilerData[1])
+
+	//AcirBlob := make([]byte, CompilerLength)
+	//AcirBlob, ok = mem.Read(CompilerOffset, CompilerLength)
+
+	fmt.Printf("%x <-- HERE IS THE POINTER TO MEM Golang Side ", ptr)
+	fmt.Println(size, " <-- here is the size of the allocated data! Golang Side ")
 
 	mod.Close(ctx)
 	fmt.Println("--- Start of wasm logs ---")

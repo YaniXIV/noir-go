@@ -1,0 +1,61 @@
+starting program
+wasmManger instantiated <nil>
+Loader:  0x104f32e30
+2026/01/26 14:59:41 this file exists!
+{map[authors:[] name:compiler type:bin] <nil> map[]}
+2026/01/26 14:59:41 length 270
+2026/01/26 14:59:41 Bytes Allocated! 270
+2026/01/26 14:59:41 Serialization Passes?
+function didn't reach the end! weird
+1
+What is going on?  1
+--- Start of wasm logs ---
+Serialized bytes: [129, 168, 47, 109, 97, 105, 110, 46, 110, 114, 217, 205, 102, 110, 32, 109, 97, 105, 110, 40, 41, 32, 123, 10, 32, 32, 32, 32, 108, 101, 116, 32, 109, 117, 116, 32, 97, 99, 99, 58, 32, 117, 49, 50, 56, 32, 61, 32, 48, 59, 10, 32, 32, 32, 32, 108, 101, 116, 32, 110, 58, 32, 117, 49, 50, 56, 32, 61, 32, 49, 95, 48, 48, 48, 95, 48, 48, 48, 59, 10, 10, 32, 32, 32, 32, 102, 111, 114, 32, 105, 32, 105, 110, 32, 48, 46, 46, 110, 32, 123, 10, 32, 32, 32, 32, 32, 32, 32, 32, 97, 99, 99, 32, 61, 32, 97, 99, 99, 32, 43, 32, 40, 105, 32, 42, 32, 105, 41, 32, 37, 32, 49, 50, 51, 52, 53, 54, 55, 59, 10, 32, 32, 32, 32, 32, 32, 32, 32, 97, 99, 99, 32, 61, 32, 97, 99, 99, 32, 94, 32, 40, 40, 105, 32, 43, 32, 97, 99, 99, 41, 32, 37, 32, 57, 56, 55, 54, 53, 52, 51, 50, 49, 41, 59, 10, 32, 32, 32, 32, 125, 10, 10, 32, 32, 32, 32, 97, 115, 115, 101, 114, 116, 40, 97, 99, 99, 32, 61, 61, 32, 97, 99, 99, 41, 59, 10, 125]
+made it into funciton Rust side
+128 <-- Rust size size 
+0x1c7dc0 <-- Rust size ptr 
+270 <-- Rust size size 
+0x1c7740 <-- Rust size ptr 
+made it into funciton Rust side
+Key:CrateName|
+Value:/Users/yani/noir-go/internal/compiler/src/main.nr|
+/Users/yani/noir-go/internal/compiler/src/main.nr<- crate name being passed in.
+Key:/Users/yani/noir-go/internal/compiler/src/main.nr|
+Value:fn main(x: Field, y: pub Field) {
+    assert(x != y);
+}
+
+#[test]
+fn test_main() {
+    main(1, 2);
+
+    // Uncomment to make test fail
+    // main(1, 1);
+}
+|
+Using main.nr
+boundaryOk((CompiledProgram { noir_version: "1.0.0-beta.17+879d00e07de4d5ad7aa821cc23e0bd716d1c534a", hash: 2882402302, program: func 0
+private parameters: [w0]
+public parameters: [w1]
+return values: []
+BRILLIG CALL func: 0, inputs: [w0 - w1], outputs: [w2]
+ASSERT 0 = w0*w2 - w1*w2 - 1
+
+unconstrained func 0: directive_invert
+0: @21 = const u32 1
+1: @20 = const u32 0
+2: @0 = calldata copy [@20; @21]
+3: @2 = const field 0
+4: @3 = field eq @0, @2
+5: jump if @3 to 8
+6: @1 = const field 1
+7: @0 = field field_div @1, @0
+8: stop &[@20; @21]
+, abi: Abi { parameters: [AbiParameter { name: "x", typ: Field, visibility: Private }, AbiParameter { name: "y", typ: Field, visibility: Public }], return_type: None, error_types: {} }, debug: [DebugInfo { brillig_locations: {}, location_tree: LocationTree { locations: [LocationNodeDebugInfo { parent: None, value: Location { span: Span(Span { start: ByteIndex(0), end: ByteIndex(0) }), file: FileId(0) } }, LocationNodeDebugInfo { parent: Some(CallStackId(0)), value: Location { span: Span(Span { start: ByteIndex(45), end: ByteIndex(51) }), file: FileId(51) } }] }, acir_locations: {AcirOpcodeLocation(0): CallStackId(1), AcirOpcodeLocation(1): CallStackId(1)}, variables: {}, functions: {}, types: {}, brillig_procedure_locs: {} }], file_map: {FileId(51): DebugFile { source: "fn main(x: Field, y: pub Field) {\n    assert(x != y);\n}\n\n#[test]\nfn test_main() {\n    main(1, 2);\n\n    // Uncomment to make test fail\n    // main(1, 1);\n}\n", path: "/Users/yani/noir-go/internal/compiler/src/main.nr" }}, warnings: [], expression_width: Bounded { width: 4 } }, []))boundary
+Made it without crashing!
+
+--- End of wasm logs ---
+Compiler instantiated &{{{} {{} 1} {{} {0 0}}} 0x14000be4030 <nil>}
+2026/01/26 14:59:41 Test completes
+PASS
+ok  	noir-go/internal/compiler	2.176s

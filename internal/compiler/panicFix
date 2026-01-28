@@ -1,0 +1,55 @@
+starting program
+wasmManger instantiated <nil>
+Loader:  0x1008ead70
+2026/01/28 15:31:47 this file exists!
+{map[authors:[] name:compiler type:bin] <nil> map[]}
+2026/01/28 15:31:47 length 270
+2026/01/28 15:31:47 Bytes Allocated! 270
+217b00 <-- HERE IS THE POINTER TO MEM Golang Side 270  <-- here is the size of the allocated data! Golang Side 
+--- Start of wasm logs ---
+Serialized bytes: [129, 168, 47, 109, 97, 105, 110, 46, 110, 114, 217, 205, 102, 110, 32, 109, 97, 105, 110, 40, 41, 32, 123, 10, 32, 32, 32, 32, 108, 101, 116, 32, 109, 117, 116, 32, 97, 99, 99, 58, 32, 117, 49, 50, 56, 32, 61, 32, 48, 59, 10, 32, 32, 32, 32, 108, 101, 116, 32, 110, 58, 32, 117, 49, 50, 56, 32, 61, 32, 49, 95, 48, 48, 48, 95, 48, 48, 48, 59, 10, 10, 32, 32, 32, 32, 102, 111, 114, 32, 105, 32, 105, 110, 32, 48, 46, 46, 110, 32, 123, 10, 32, 32, 32, 32, 32, 32, 32, 32, 97, 99, 99, 32, 61, 32, 97, 99, 99, 32, 43, 32, 40, 105, 32, 42, 32, 105, 41, 32, 37, 32, 49, 50, 51, 52, 53, 54, 55, 59, 10, 32, 32, 32, 32, 32, 32, 32, 32, 97, 99, 99, 32, 61, 32, 97, 99, 99, 32, 94, 32, 40, 40, 105, 32, 43, 32, 97, 99, 99, 41, 32, 37, 32, 57, 56, 55, 54, 53, 52, 51, 50, 49, 41, 59, 10, 32, 32, 32, 32, 125, 10, 10, 32, 32, 32, 32, 97, 115, 115, 101, 114, 116, 40, 97, 99, 99, 32, 61, 61, 32, 97, 99, 99, 41, 59, 10, 125]
+made it into funciton Rust side
+Key:/main.nr|
+Value:fn main() {
+    let mut acc: u128 = 0;
+    let n: u128 = 1_000_000;
+
+    for i in 0..n {
+        acc = acc + (i * i) % 1234567;
+        acc = acc ^ ((i + acc) % 987654321);
+    }
+
+    assert(acc == acc);
+}|
+Using main.nr
+Crate name is empty
+Crate name rust side ||
+128 <-- Rust size size 
+0x217b00 <-- Rust size ptr 
+270 <-- Rust size size 
+0x217b00 <-- Rust size ptr 
+made it into funciton Rust side
+Key:CrateName|
+Value:/Users/yani/noir-go/internal/compiler/src/main.nr|
+/Users/yani/noir-go/internal/compiler/src/main.nr<- crate name being passed in.
+Key:/Users/yani/noir-go/internal/compiler/src/main.nr|
+Value:fn main(x: Field, y: pub Field) {
+    assert(x != y);
+}
+
+#[test]
+fn test_main() {
+    main(1, 2);
+
+    // Uncomment to make test fail
+    // main(1, 1);
+}
+|
+Using main.nr
+Crate name rust side |/Users/yani/noir-go/internal/compiler/src/main.nr|
+
+--- End of wasm logs ---
+Compiler instantiated &{{{} {{} 1} {{} {0 0}}} 0x1400000c108 <nil>}
+2026/01/28 15:31:47 Test completes
+PASS
+ok  	noir-go/internal/compiler	2.152s
