@@ -1,5 +1,5 @@
 [package]
-name = "compiler"
+name = "noirtest"
 type = "bin"
 authors = [""]
 

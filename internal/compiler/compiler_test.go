@@ -20,7 +20,7 @@ func RawCompilerTest() {
 		panic(err)
 	}
 	fmt.Println("wasmManger instantiated", w.instances[Compiler])
-	AcirBlob, errCompile := w.CompileProgram(".")
+	AcirBlob, errCompile := w.CompileProgram("/noirtest/")
 	fmt.Println("Compiler instantiated", w.instances[Compiler])
 	if errCompile != nil {
 
