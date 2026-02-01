@@ -14,23 +14,6 @@ use std::ptr;
 struct MyMap(HashMap<String, String>);
 
 fn main() {
-    //println!("Hello, world!");
-
-    //compile_from_memory("fn main(x: Field, y: pub Field) {assert(x != y);}",)
-    //compile_from_memory(
-    //  "fn main() {
-    //   let mut acc: u128 = 0;
-    // let n: u128 = 1_000_000;
-
-    //for i in 0..n {
-    //  acc = acc + (i * i) % 1234567;
-    // acc = acc ^ ((i + acc) % 987654321);
-    //}
-
-    // assert(acc == acc);
-    //}",
-    //  )
-
     let mut map: HashMap<String, String> = HashMap::new();
     map.insert(
         "/main.nr".to_string(),
@@ -57,8 +40,6 @@ fn main() {
     let x = alloc(128);
     dealloc(x, 128);
 }
-//fn main(x: Field, y: pub Field) {
-//assert(x != y);
 
 #[unsafe(no_mangle)]
 
@@ -77,46 +58,6 @@ pub extern "C" fn test_compile_wasm_go() {
 }",
     )
 }
-/*
-#[unsafe(no_mangle)]
-pub extern "C" fn SerializationTest(ptr: *const u8, len: usize) -> u8 {
-    println!("made it into funciton Rust side");
-    let data: &[u8] = unsafe { std::slice::from_raw_parts(ptr, len) };
-    let map: HashMap<String, String> = rmp_serde::from_slice(data).expect("Serializing garbage");
-    /*
-        for (key, value) in map {
-        }
-    */
-
-    let mut fm = file_manager_with_stdlib(Path::new(""));
-
-    let mut crate_name = String::new();
-    for (key, value) in map {
-        println!("Key:{}|\nValue:{}|", key, value);
-
-        if key == "CrateName" {
-            crate_name = value;
-            println!("{}<- crate name being passed in.", crate_name);
-        } else {
-            fm.add_file_with_source(Path::new(&key), value);
-        }
-    }
-    let parsed_files = parse_all(&fm);
-
-    let mut context = Context::new(fm, parsed_files);
-    let options = CompileOptions::default();
-    println!("Using main.nr");
-    if crate_name == "" {
-        panic!("Crate name is empty");
-    }
-    let crate_id = prepare_crate(&mut context, Path::new(&crate_name));
-    let result = compile_main(&mut context, crate_id, &options, None);
-    println!("boundary{:?}boundary", result);
-    println!("Made it without crashing!");
-    //panic!("Test Crash");
-    1
-}
-*/
 
 #[unsafe(no_mangle)]
 pub extern "C" fn compile_wasm(ptr: *const u8, len: usize) /*-> (*const u8, usize)*/
@@ -124,11 +65,6 @@ pub extern "C" fn compile_wasm(ptr: *const u8, len: usize) /*-> (*const u8, usiz
     println!("made it into funciton Rust side");
     let data: &[u8] = unsafe { std::slice::from_raw_parts(ptr, len) };
     let map: HashMap<String, String> = rmp_serde::from_slice(data).expect("Serializing garbage");
-    /*
-        for (key, value) in map {
-        }
-    */
-
     let mut fm = file_manager_with_stdlib(Path::new(""));
 
     let mut crate_name = String::new();
