@@ -127,6 +127,7 @@ pub extern "C" fn compile_wasm(ptr: *const u8, len: usize) /*-> (*const u8, usiz
     /*
         for (key, value) in map {
         }
+
     */
 
     let mut fm = file_manager_with_stdlib(Path::new(""));
