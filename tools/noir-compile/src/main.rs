@@ -122,24 +122,34 @@ pub extern "C" fn SerializationTest(ptr: *const u8, len: usize) -> u8 {
 pub extern "C" fn compile_wasm(ptr: *const u8, len: usize) /*-> (*const u8, usize)*/
 {
     println!("made it into funciton Rust side");
-    let data: &[u8] = unsafe { std::slice::from_raw_parts(ptr, len) };
-    let map: HashMap<String, String> = rmp_serde::from_slice(data).expect("Serializing garbage");
-    /*
-        for (key, value) in map {
-        }
+    if ptr.is_null() || len == 0 {
+        println!("{}", "Input buffer is empty.".red());
+        return;
+    }
 
-    */
+    let data: &[u8] = unsafe { std::slice::from_raw_parts(ptr, len) };
+    let map: HashMap<String, String> = match rmp_serde::from_slice(data) {
+        Ok(map) => map,
+        Err(err) => {
+            println!("{} {err}", "Failed to deserialize input.".red());
+            return;
+        }
+    };
 
     let mut fm = file_manager_with_stdlib(Path::new(""));
 
-    let mut crate_name = String::new();
+    let mut crate_name = None;
     for (key, value) in map {
         println!("{}|{}|", "Key:".red(), key);
         println!("{}|{}|", "Value:".blue().bold(), value);
 
         if key == "CrateName" {
-            crate_name = value;
-            println!("{}|{}|", "Crate name being passed in.".green(), crate_name);
+            println!(
+                "{}|{}|",
+                "Crate name being passed in.".green(),
+                value
+            );
+            crate_name = Some(value);
         } else {
             println!("\nPassing in |{}|\n\nand\n\n|{}|", &key, value);
             fm.add_file_with_source(Path::new(&key), value);
@@ -150,9 +160,13 @@ pub extern "C" fn compile_wasm(ptr: *const u8, len: usize) /*-> (*const u8, usiz
     let mut context = Context::new(fm, parsed_files);
     let options = CompileOptions::default();
     println!("{}", "Using main.nr".yellow());
-    if crate_name == "" {
-        println!("{}", "Crate name is empty".red());
-    }
+    let crate_name = match crate_name {
+        Some(name) => name,
+        None => {
+            println!("{}", "Crate name is empty".red());
+            return;
+        }
+    };
     let realpath = "/Users/yani/noir-go/internal/compiler/src/main.nr";
     if crate_name != realpath {
         println!("paths don't match up");
@@ -162,17 +176,14 @@ pub extern "C" fn compile_wasm(ptr: *const u8, len: usize) /*-> (*const u8, usiz
         let result = panic::catch_unwind(AssertUnwindSafe(|| {
             let crate_id = prepare_crate(&mut context, Path::new(&crate_name));
             let result = compile_main(&mut context, crate_id, &options, None);
-            //println!("{:?}", result);
-            let compiled_program = match result {
-                Ok((program, _)) => program,
-                Err(_) => {
-                    // Handle the error as you wish
-                    // For example, return a default, panic, or log
-                    panic!("Compilation failed");
+            match result {
+                Ok((program, _)) => {
+                    println!("|{:?}|<== Compiled program", program.abi);
                 }
-            };
-            //let ptr = compiled_program.program;
-            println!("|{:?}|<== Compiled program", compiled_program.abi);
+                Err(err) => {
+                    println!("{} {err:?}", "Compilation failed.".red());
+                }
+            }
         }));
 
         match result {
@@ -181,7 +192,6 @@ pub extern "C" fn compile_wasm(ptr: *const u8, len: usize) /*-> (*const u8, usiz
         }
     }
     println!("{}", "Made it without crashing!".green());
-    //panic!("Test Crash");
 }
 
 #[unsafe(no_mangle)]
