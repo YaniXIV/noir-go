@@ -64,6 +64,8 @@ func (w *WasmManager) CompileProgram(projectPath string) ([]byte, error) {
 	dealloc := mod.ExportedFunction("dealloc")
 	Compiler := mod.ExportedFunction("compile_wasm")
 	//Serialization := mod.ExportedFunction("SerializationTest")
+	fmt.Println("params:", Compiler.Definition().ParamTypes())
+	fmt.Println("results:", Compiler.Definition().ResultTypes())
 
 	if alloc == nil || Compiler == nil || dealloc == nil {
 		return nil, fmt.Errorf("exported Function Error ")
@@ -104,11 +106,18 @@ func (w *WasmManager) CompileProgram(projectPath string) ([]byte, error) {
 
 	//Call to Compiler. Args passed, size, length....
 	//CompilerData, CompilerErr := Compiler.Call(ctx, uint64(ptr), uint64(size))
-	_, CompilerErr := Compiler.Call(ctx, uint64(ptr), uint64(size))
+	CompilerResult, CompilerErr := Compiler.Call(ctx, uint64(ptr), uint64(size))
 	if CompilerErr != nil {
 		fmt.Println("Compiler Failed", CompilerErr)
 		return nil, nil
 	}
+	data, ok := mem.Read(uint32(CompilerResult[0]), uint32(CompilerResult[1]))
+
+	if !ok {
+		panic("read data fail")
+	}
+	fmt.Printf("Compiler data: \n|%v|\n", data)
+
 	_, deallocErr := dealloc.Call(ctx, uint64(ptr), uint64(size))
 	if deallocErr != nil {
 		panic(deallocErr)
