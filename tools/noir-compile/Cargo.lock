@@ -1375,6 +1375,7 @@ dependencies = [
  "noirc_frontend",
  "rmp-serde",
  "serde",
+ "serde_json",
 ]
 
 [[package]]

@@ -3,7 +3,10 @@ package compiler
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
+	//"encoding/json"
 	"fmt"
+	"github.com/vmihailenco/msgpack/v5"
 	"log"
 	"noir-go/internal/fs"
 	"unsafe"
@@ -11,7 +14,20 @@ import (
 	"github.com/tetratelabs/wazero"
 )
 
+type WireCompileResult struct {
+	FormatVersion uint32 `msgpack:"format_version"`
+	NoirVersion   string `msgpack:"noir_version"`
+	AbiJSON       string `msgpack:"abi_json"`
+	AcirString    string `msgpack:"acir_string"`
+	AcirBytes     []byte `msgpack:"acir_bytes"`
+	Hash          uint64 `msgpack:"hash"`
+}
+
 type AcirBlob []byte
+type wasmBuf struct {
+	ptr uint32
+	len uint32
+}
 
 // simple compile function.
 func Compile(projectPath string) {
@@ -106,17 +122,35 @@ func (w *WasmManager) CompileProgram(projectPath string) ([]byte, error) {
 
 	//Call to Compiler. Args passed, size, length....
 	//CompilerData, CompilerErr := Compiler.Call(ctx, uint64(ptr), uint64(size))
-	CompilerResult, CompilerErr := Compiler.Call(ctx, uint64(ptr), uint64(size))
+	outRes, err := alloc.Call(ctx, 8)
+	if err != nil {
+		return nil, err
+	}
+	outptr := outRes[0]
+
+	_, CompilerErr := Compiler.Call(ctx, outptr, uint64(ptr), uint64(size))
+
 	if CompilerErr != nil {
 		fmt.Println("Compiler Failed", CompilerErr)
 		return nil, nil
 	}
-	data, ok := mem.Read(uint32(CompilerResult[0]), uint32(CompilerResult[1]))
 
+	buf, ok := mem.Read(uint32(outptr), 8)
 	if !ok {
-		panic("read data fail")
+		return nil, fmt.Errorf("failed to read WasmBuf")
 	}
-	fmt.Printf("Compiler data: \n|%v|\n", data)
+
+	retPtr := binary.LittleEndian.Uint32(buf[0:4])
+	retLen := binary.LittleEndian.Uint32(buf[4:8])
+
+	if retPtr == 0 || retLen == 0 {
+		return nil, fmt.Errorf("compile failed (ptr=0,len=0)")
+	}
+
+	// 5) Read output bytes
+	outBytes, ok := mem.Read(retPtr, retLen)
+
+	fmt.Println(outBytes, "<- output bytes")
 
 	_, deallocErr := dealloc.Call(ctx, uint64(ptr), uint64(size))
 	if deallocErr != nil {
@@ -128,17 +162,33 @@ func (w *WasmManager) CompileProgram(projectPath string) ([]byte, error) {
 	//AcirBlob := make([]byte, CompilerLength)
 	//AcirBlob, ok = mem.Read(CompilerOffset, CompilerLength)
 
-	fmt.Printf("%x <-- HERE IS THE POINTER TO MEM Golang Side ", ptr)
-	fmt.Println(size, " <-- here is the size of the allocated data! Golang Side ")
-
+	//fmt.Println(len(outBytes), "<- lenght of the outbytes")
 	mod.Close(ctx)
-	fmt.Println("--- Start of wasm logs ---")
-	fmt.Println(outputBuf.String())
-	fmt.Println("--- End of wasm logs ---")
+	//printLogs(outputBuf)
+	var wire WireCompileResult
+	err = msgpack.Unmarshal(outBytes, &wire)
+	if err != nil {
+		return nil, err
+	}
 
-	//fmt.Printf("Here are the Acir bytes From Golang!\n%v\n", AcirBlob)
+	/*
+		var wire WireCompileResult
+		err = json.Unmarshal(outBytes, &wire)
+		if err != nil {
+			fmt.Println(err)
 
+		}
+		fmt.Println(wire, "this is the wire")
+		//fmt.Printf("Here are the Acir bytes From Golang!\n%v\n", AcirBlob)
+	*/
+	//fmt.Println(string(outBytes))
+	fmt.Println(wire, "this is the wire")
 	return nil, nil
+}
+func printLogs(outBuf *bytes.Buffer) {
+	fmt.Println("--- Start of wasm logs ---")
+	fmt.Println(outBuf.String())
+	fmt.Println("--- End of wasm logs ---")
 }
 
 // Don't use this function

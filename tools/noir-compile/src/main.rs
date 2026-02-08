@@ -3,8 +3,10 @@ use acvm::acir::circuit::ExpressionWidth;
 use colored::Colorize;
 use nargo::parse_all;
 use noirc_abi::Abi;
+use noirc_artifacts::program;
 use noirc_driver::{CompileOptions, compile_main, file_manager_with_stdlib, prepare_crate};
 use noirc_frontend::hir::Context;
+use rmp_serde::encode::Serializer;
 use rmp_serde::encode::to_vec;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -12,13 +14,18 @@ use std::panic::{self, AssertUnwindSafe};
 use std::path::Path;
 use std::ptr;
 
+#[repr(C)]
+pub struct WasmBuf {
+    pub ptr: u32,
+    pub len: u32,
+}
 #[derive(Serialize, Deserialize)]
 struct MyMap(HashMap<String, String>);
 #[derive(Serialize, Deserialize)]
 struct WireCompileResult {
     pub format_version: u32,
     pub noir_version: String,
-    pub abi: Abi,
+    pub abi_json: String,
     pub acir_string: String,
     pub acir_bytes: Vec<u8>,
     pub hash: u64,
@@ -71,11 +78,15 @@ pub extern "C" fn test_compile_wasm_go() {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn compile_wasm(in_ptr: *mut u8, in_len: usize) -> (*const u8, usize) {
+pub extern "C" fn compile_wasm(out: *mut WasmBuf, in_ptr: *mut u8, in_len: usize) {
     println!("made it into funciton Rust side");
     if in_ptr.is_null() || in_len == 0 {
         println!("{}", "Input buffer is empty.".red());
-        return (ptr::null(), 0);
+        unsafe {
+            (*out).ptr = 0;
+            (*out).len = 0;
+        }
+        return;
     }
 
     let data: &[u8] = unsafe { std::slice::from_raw_parts(in_ptr, in_len) };
@@ -83,7 +94,11 @@ pub extern "C" fn compile_wasm(in_ptr: *mut u8, in_len: usize) -> (*const u8, us
         Ok(map) => map,
         Err(err) => {
             println!("{} {err}", "Failed to deserialize input.".red());
-            return (ptr::null(), 0);
+            unsafe {
+                (*out).ptr = 0;
+                (*out).len = 0;
+            }
+            return;
         }
     };
 
@@ -111,7 +126,11 @@ pub extern "C" fn compile_wasm(in_ptr: *mut u8, in_len: usize) -> (*const u8, us
         Some(name) => name,
         None => {
             println!("{}", "Crate name is empty".red());
-            return (ptr::null(), 0);
+            unsafe {
+                (*out).ptr = 0;
+                (*out).len = 0;
+            }
+            return;
         }
     };
     let testpath = "/Users/yani/noir-go/internal/compiler/noirtest/src/main.nr";
@@ -135,27 +154,51 @@ pub extern "C" fn compile_wasm(in_ptr: *mut u8, in_len: usize) -> (*const u8, us
             Ok(wire) => wire,
             Err(msg) => {
                 eprintln!("{msg}");
-                return (ptr::null(), 0);
+                unsafe {
+                    *out = WasmBuf { ptr: 0, len: 0 };
+                }
+                return;
             }
         },
         Err(_) => {
             eprintln!("Panic occured inside compiler");
-            return (ptr::null(), 0);
+            unsafe {
+                *out = WasmBuf { ptr: 0, len: 0 };
+            }
+            return;
         }
     };
-    let msgpack_bytes: Vec<u8> = to_vec(&wire).expect("msgpack serialization failed");
+    let mut buf = Vec::new();
+    wire.serialize(&mut Serializer::new(&mut buf).with_struct_map())
+        .expect("msgpack serialization failed");
+    let msgpack_bytes = buf;
     let out_len = msgpack_bytes.len();
     if out_len == 0 {
-        return (std::ptr::null(), 0);
+        unsafe {
+            *out = WasmBuf { ptr: 0, len: 0 };
+        }
+        return;
     }
     let out_ptr = alloc(out_len);
     if out_ptr.is_null() {
-        return (std::ptr::null(), 0);
+        unsafe {
+            *out = WasmBuf { ptr: 0, len: 0 };
+        }
+        return;
     }
     unsafe {
         ptr::copy_nonoverlapping(msgpack_bytes.as_ptr(), out_ptr, out_len);
     }
-    return (out_ptr, out_len);
+    unsafe {
+        *out = WasmBuf {
+            ptr: out_ptr as u32,
+            len: out_len as u32,
+        };
+    }
+    let json = serde_json::to_string_pretty(&wire).expect("failed to serialize");
+
+    println!("{}", json);
+    return;
 }
 
 fn compile_inner(
@@ -169,7 +212,7 @@ fn compile_inner(
         Ok((program, _)) => Ok(WireCompileResult {
             format_version: 1,
             noir_version: program.noir_version,
-            abi: program.abi,
+            abi_json: serde_json::to_string(&program.abi).unwrap(),
             acir_string: program.program.to_string(),
             acir_bytes: Program::serialize_program(&program.program),
             hash: program.hash,
