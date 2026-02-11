@@ -1,4 +1,4 @@
-package compiler
+package wasm
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/tetratelabs/wazero"
+	"github.com/tetratelabs/wazero/api"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 )
 
@@ -41,6 +42,15 @@ type WasmManager struct {
 	runtime   wazero.Runtime
 	instances map[WasmType]*wasmInstance
 	loaders   map[WasmType]WasmLoader
+}
+
+func (w *WasmManager) Instantiate(ctx context.Context, obj wazero.CompiledModule, config wazero.ModuleConfig) (api.Module, error) {
+	mod, err := w.runtime.InstantiateModule(ctx, obj, config)
+	if err != nil {
+		return nil, err
+	}
+	return mod, nil
+
 }
 
 func NewWasmManager() (*WasmManager, error) {

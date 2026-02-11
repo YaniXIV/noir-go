@@ -2,7 +2,7 @@
 
 A personal project to make Noir usable directly from Go. The goal is a full Go library/SDK that covers the Noir lifecycle: compile, prove, and verify.
 
-This is early and not production ready. The compiler bridge works, but it still needs hardening. The API is not stable yet.
+This is early and not production ready. The compiler bridge works, but it still needs hardening. The API is not stable yet. Under the hood, the compiler runs via WASM to keep the toolchain portable while presenting a Go-first API.
 
 If you are interested, contributions and feedback are welcome.
 

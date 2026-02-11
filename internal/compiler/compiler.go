@@ -9,6 +9,7 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 	"log"
 	"noir-go/internal/fs"
+	"noir-go/internal/wasm"
 	"unsafe"
 
 	"github.com/tetratelabs/wazero"
@@ -31,7 +32,6 @@ type wasmBuf struct {
 
 // simple compile function.
 func Compile(projectPath string) {
-	runWasmCompiler(noirCompilerWasm)
 
 	r := fs.NewResolver()
 
@@ -40,13 +40,12 @@ func Compile(projectPath string) {
 	if err != nil {
 		panic(err)
 	}
-
-	runWasmCompiler(projectData)
+	fmt.Println(projectData)
 
 }
 
-func (w *WasmManager) CompileProgram(projectPath string) ([]byte, error) {
-	obj, err := w.Get(Compiler)
+func CompileProgram(w *wasm.WasmManager, projectPath string) ([]byte, error) {
+	obj, err := w.Get(wasm.Compiler)
 	if obj == nil {
 		fmt.Println("OBJECT IS INVALID")
 	}
@@ -59,7 +58,9 @@ func (w *WasmManager) CompileProgram(projectPath string) ([]byte, error) {
 		WithStdout(outputBuf).
 		WithStderr(outputBuf)
 
-	mod, errInstantiate := w.runtime.InstantiateModule(ctx, obj.Compiled, config)
+	mod, errInstantiate := w.Instantiate(
+		ctx, obj.Compiled, config,
+	)
 	if errInstantiate != nil {
 		fmt.Println("ERROR HERE LINE 40")
 		panic(errInstantiate)
