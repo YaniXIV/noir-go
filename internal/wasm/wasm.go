@@ -44,6 +44,14 @@ type WasmManager struct {
 	loaders   map[WasmType]WasmLoader
 }
 
+func (w *WasmManager) GetInstance(t WasmType) *wasmInstance {
+	return w.instances[t]
+}
+
+func (w *WasmManager) GetRuntime() *wazero.Runtime {
+	return &w.runtime
+}
+
 func (w *WasmManager) Instantiate(ctx context.Context, obj wazero.CompiledModule, config wazero.ModuleConfig) (api.Module, error) {
 	mod, err := w.runtime.InstantiateModule(ctx, obj, config)
 	if err != nil {

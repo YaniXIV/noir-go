@@ -1,9 +1,0 @@
-I am currently dealing with an issue when trying to read the compilation results back from wasm -> into golang. I believe that I am reading them in correctly or 
-semi correctly? but there is either a serialization error? or like my reading is off by a few bytes so I read garbage? idk. 
-
-
-Genuinely a confusing issue, cause yeah, if I were to guess. maybe the lengths im reading and writing don't match up? cause like, when I typecast to a 
-string(returnOutput) most of it is garbage, but like some lines are legible? ish? kind of? idk lol, its fuckign annoying lol. 
-
-It could be unrelated, like an issue of serialization in general, like serializing to a map in rust or like serde, and hten when I try msgpack deserialization its 
-just fundamentally incompatible? hmm. but then lik ethe fact that parts do serialize? and like I can call string(bytes) and like some shit actually comes out is werid. 

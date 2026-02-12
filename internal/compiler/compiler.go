@@ -20,7 +20,7 @@ type WireCompileResult struct {
 	NoirVersion   string `msgpack:"noir_version"`
 	AbiJSON       string `msgpack:"abi_json"`
 	AcirString    string `msgpack:"acir_string"`
-	AcirBytes     []byte `msgpack:"acir_bytes"`
+	AcirBytes     []int  `msgpack:"acir_bytes"`
 	Hash          uint64 `msgpack:"hash"`
 }
 
@@ -150,8 +150,14 @@ func CompileProgram(w *wasm.WasmManager, projectPath string) ([]byte, error) {
 
 	// 5) Read output bytes
 	outBytes, ok := mem.Read(retPtr, retLen)
+	log.Println(outBytes[0:5])
+	copyBytes := make([]byte, len(outBytes))
+	copy(copyBytes, outBytes)
 
-	fmt.Println(outBytes, "<- output bytes")
+	log.Println(outBytes[0:5], "first 5 outbytes")
+	log.Println(copyBytes[0:5], "first 5 copybytes")
+
+	//fmt.Println(outBytes, "<- output bytes")
 
 	_, deallocErr := dealloc.Call(ctx, uint64(ptr), uint64(size))
 	if deallocErr != nil {
@@ -166,8 +172,12 @@ func CompileProgram(w *wasm.WasmManager, projectPath string) ([]byte, error) {
 	//fmt.Println(len(outBytes), "<- lenght of the outbytes")
 	mod.Close(ctx)
 	//printLogs(outputBuf)
+
+	log.Println(outBytes[0:5], "first 5 outbytes")
+	log.Println(copyBytes[0:5], "first 5 copybytes")
+
 	var wire WireCompileResult
-	err = msgpack.Unmarshal(outBytes, &wire)
+	err = msgpack.Unmarshal(copyBytes, &wire)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +193,7 @@ func CompileProgram(w *wasm.WasmManager, projectPath string) ([]byte, error) {
 		//fmt.Printf("Here are the Acir bytes From Golang!\n%v\n", AcirBlob)
 	*/
 	//fmt.Println(string(outBytes))
-	fmt.Println(wire, "this is the wire")
+	//fmt.Println(wire, "this is the wire")
 	return nil, nil
 }
 func printLogs(outBuf *bytes.Buffer) {
