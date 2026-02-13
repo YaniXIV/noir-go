@@ -1,0 +1,36 @@
+starting program
+Loader:  0x1007641d0
+2026/02/11 20:13:21 this file exists!
+{map[authors:[] name:noirtest type:bin] <nil> map[]}
+params: [127 127 127]
+results: []
+2026/02/11 20:13:21 length 288
+2026/02/11 20:13:21 Bytes Allocated! 288
+2026/02/11 20:13:21 [134 174 102 111 114]
+2026/02/11 20:13:21 [134 174 102 111 114] first 5 outbytes
+2026/02/11 20:13:21 [134 174 102 111 114] first 5 copybytes
+2026/02/11 20:13:21 [134 174 102 111 114] first 5 outbytes
+2026/02/11 20:13:21 [134 174 102 111 114] first 5 copybytes
+Compiler instantiated &{{{} {{} 1} {{} {0 0}}} 0x1400000c030 <nil>}
+Compiler failed to get &{{{} {{} 1} {{} {0 0}}} 0x1400000c030 <nil>}
+--- FAIL: TestCompiler (4.40s)
+panic: msgpack: invalid code=dc decoding string/bytes length [recovered]
+	panic: msgpack: invalid code=dc decoding string/bytes length
+
+goroutine 22 [running]:
+testing.tRunner.func1.2({0x100826140, 0x1401c892340})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/testing/testing.go:1734 +0x1ac
+testing.tRunner.func1()
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/testing/testing.go:1737 +0x334
+panic({0x100826140?, 0x1401c892340?})
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/runtime/panic.go:792 +0x124
+noir-go/internal/compiler.RawCompilerTest()
+	/Users/yani/noir-go/internal/compiler/compiler_test.go:30 +0x228
+noir-go/internal/compiler.TestCompiler(0x14000082e00?)
+	/Users/yani/noir-go/internal/compiler/compiler_test.go:13 +0x1c
+testing.tRunner(0x14000082e00, 0x100884a70)
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/testing/testing.go:1792 +0xe4
+created by testing.(*T).Run in goroutine 1
+	/opt/homebrew/Cellar/go/1.24.4/libexec/src/testing/testing.go:1851 +0x374
+exit status 2
+FAIL	noir-go/internal/compiler	4.422s

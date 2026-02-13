@@ -1,6 +1,6 @@
 # Paths (relative to server/)
 RUSTLIB_COMPILER=noir-compile
-TARGET_DIR=../internal/compiler
+TARGET_DIR=../internal/wasm
 WASM_OUTPUT=$(TARGET_DIR)/noir-compile.wasm
 
 

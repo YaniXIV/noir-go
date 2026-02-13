@@ -1,5 +1,6 @@
 use acir::circuit::Program;
 use acvm::acir::circuit::ExpressionWidth;
+use base64::{Engine as _, engine::general_purpose};
 use colored::Colorize;
 use nargo::parse_all;
 use noirc_abi::Abi;
@@ -9,6 +10,7 @@ use noirc_frontend::hir::Context;
 use rmp_serde::encode::Serializer;
 use rmp_serde::encode::to_vec;
 use serde::{Deserialize, Serialize};
+use serde_bytes::ByteBuf;
 use std::collections::HashMap;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::Path;
@@ -21,13 +23,14 @@ pub struct WasmBuf {
 }
 #[derive(Serialize, Deserialize)]
 struct MyMap(HashMap<String, String>);
+
 #[derive(Serialize, Deserialize)]
 struct WireCompileResult {
     pub format_version: u32,
     pub noir_version: String,
     pub abi_json: String,
     pub acir_string: String,
-    pub acir_bytes: Vec<u8>,
+    pub acir_bytes: String,
     pub hash: u64,
 }
 
@@ -144,6 +147,7 @@ pub extern "C" fn compile_wasm(out: *mut WasmBuf, in_ptr: *mut u8, in_len: usize
     let caught = panic::catch_unwind(AssertUnwindSafe(|| {
         compile_inner(&mut context, &crate_name, &options)
     }));
+
     //Hopefully lets us catch panics.
     //Although ive been having an issue before where panics were not caught.
     //Could be a wasm rust thing, like how this specific panic in
@@ -169,6 +173,7 @@ pub extern "C" fn compile_wasm(out: *mut WasmBuf, in_ptr: *mut u8, in_len: usize
         }
     };
     let mut buf = Vec::new();
+
     wire.serialize(&mut Serializer::new(&mut buf).with_struct_map())
         .expect("msgpack serialization failed");
     let msgpack_bytes = buf;
@@ -206,17 +211,27 @@ fn compile_inner(
     crate_name: &str,
     options: &CompileOptions,
 ) -> Result<WireCompileResult, String> {
+    //panic!("Test panic");
     let crate_id = prepare_crate(context, Path::new(&crate_name));
     let result = compile_main(context, crate_id, &options, None);
+
     match result {
-        Ok((program, _)) => Ok(WireCompileResult {
-            format_version: 1,
-            noir_version: program.noir_version,
-            abi_json: serde_json::to_string(&program.abi).unwrap(),
-            acir_string: program.program.to_string(),
-            acir_bytes: Program::serialize_program(&program.program),
-            hash: program.hash,
-        }),
+        Ok((program, _)) => {
+            let acir_bytes = Program::serialize_program(&program.program);
+            // Convert those bytes to a Base64 string
+            if acir_bytes.len() == 0 {
+                panic!("Acir bytes len == 0")
+            }
+            let acir_b64 = general_purpose::STANDARD.encode(acir_bytes);
+            Ok(WireCompileResult {
+                format_version: 1,
+                noir_version: program.noir_version,
+                abi_json: serde_json::to_string(&program.abi).unwrap(),
+                acir_string: program.program.to_string(),
+                acir_bytes: acir_b64,
+                hash: program.hash,
+            })
+        }
         Err(err) => Err(format!("Compilation failed: {err:?}")),
     }
 }
