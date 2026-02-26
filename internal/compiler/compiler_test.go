@@ -1,39 +1,32 @@
 package compiler
 
 import (
-	"fmt"
-	"log"
-	"noir-go/internal/wasm"
+	"path/filepath"
 	"testing"
+
+	"noir-go/internal/wasm"
 )
 
-func TestCompiler(t *testing.T) {
+func TestCompileProgram(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping wasm compile in short mode")
+	}
 
-	//runWasmCompiler(noirCompilerWasm)
-	RawCompilerTest()
-}
-
-func RawCompilerTest() {
-	fmt.Println("starting program")
 	w, err := wasm.NewWasmManager()
-
-	if err != nil || w.GetRuntime() == nil {
-		fmt.Println("error with wasm manager")
-		panic(err)
+	if err != nil {
+		t.Fatalf("NewWasmManager failed: %v", err)
 	}
-	//fmt.Println("wasmManger instantiated", w.instances[Compiler])
-	AcirBlob, errCompile := CompileProgram(w, "noirtest")
-	fmt.Println("Compiler instantiated", w.GetInstance(wasm.Compiler))
-	if errCompile != nil {
-
-		fmt.Println("Compiler failed to get", w.GetInstance(wasm.Compiler))
-		panic(errCompile)
+	if w.GetRuntime() == nil {
+		t.Fatalf("expected non-nil runtime")
 	}
-	if AcirBlob == nil {
-		//panic("AcirBlob is nil.")
-		//return
-		log.Println("Acir blob is nil")
-	}
-	log.Println("Test completes")
 
+	projectPath := filepath.Join("noirtest")
+	out, err := CompileProgram(w, projectPath)
+	if err != nil {
+		t.Fatalf("CompileProgram failed: %v", err)
+	}
+
+	if out == nil || len(out) == 0 {
+		t.Skip("CompileProgram does not return bytes yet; enable once implemented")
+	}
 }
