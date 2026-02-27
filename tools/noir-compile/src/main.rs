@@ -30,7 +30,7 @@ struct WireCompileResult {
     pub noir_version: String,
     pub abi_json: String,
     pub acir_string: String,
-    pub acir_bytes: String,
+    pub acir_bytes: Vec<u8>,
     pub hash: u64,
 }
 
@@ -219,16 +219,16 @@ fn compile_inner(
         Ok((program, _)) => {
             let acir_bytes = Program::serialize_program(&program.program);
             // Convert those bytes to a Base64 string
-            if acir_bytes.len() == 0 {
-                panic!("Acir bytes len == 0")
-            }
-            let acir_b64 = general_purpose::STANDARD.encode(acir_bytes);
+            //if acir_bytes.len() == 0 {
+            //   panic!("Acir bytes len == 0")
+            // }
+            //let acir_b64 = general_purpose::STANDARD.encode(acir_bytes);
             Ok(WireCompileResult {
                 format_version: 1,
                 noir_version: program.noir_version,
                 abi_json: serde_json::to_string(&program.abi).unwrap(),
                 acir_string: program.program.to_string(),
-                acir_bytes: acir_b64,
+                acir_bytes: acir_bytes,
                 hash: program.hash,
             })
         }

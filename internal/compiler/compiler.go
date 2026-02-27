@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	//"encoding/json"
-	"encoding/base64"
+	//"encoding/base64"
 	"fmt"
 	"github.com/vmihailenco/msgpack/v5"
 	"log"
@@ -21,7 +21,7 @@ type WireCompileResult struct {
 	NoirVersion   string `msgpack:"noir_version"`
 	AbiJSON       string `msgpack:"abi_json"`
 	AcirString    string `msgpack:"acir_string"`
-	AcirBytes     string `msgpack:"acir_bytes"`
+	AcirBytes     []int  `msgpack:"acir_bytes"`
 	Hash          uint64 `msgpack:"hash"`
 }
 
@@ -196,18 +196,21 @@ func CompileProgram(w *wasm.WasmManager, projectPath string) ([]byte, error) {
 	//fmt.Println(string(outBytes))
 	//fmt.Println(wire, "this is the wire")
 	fmt.Println("1", wire.AcirString)
+	fmt.Println("2", wire.AcirBytes)
 	//data, err := hex.DecodeString(wire.AcirBytes)
-	data, err := base64.StdEncoding.DecodeString(wire.AcirBytes)
+	//data, err := base64.StdEncoding.DecodeString(wire.AcirBytes)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("2|%v|\n", string(data))
-	if wire.AcirString == string(data) {
-		fmt.Println("Yes hex and bin are the same.")
-	} else {
-		fmt.Println("Yes hex and bin are NOT the same.")
+	//fmt.Printf("2|%v|\n", string(data))
+	/*
+		if wire.AcirString == string(data) {
+			fmt.Println("Yes hex and bin are the same.")
+		} else {
+			fmt.Println("Yes hex and bin are NOT the same.")
 
-	}
+		}
+	*/
 	//fmt.Println("2", wire.AcirB64)
 	//fmt.Println("3", wire.FormatVersion)
 	//fmt.Println("4", wire.Hash)

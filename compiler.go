@@ -6,6 +6,7 @@ import (
 	"noir-go/internal/fs"
 )
 
+// Api still in progress
 func MustCompile(projectPath string) {
 
 }
