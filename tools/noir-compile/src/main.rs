@@ -34,6 +34,21 @@ struct WireCompileResult {
     pub hash: u64,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WireMessage {
+    /// Schema version for forward/back compat.
+    #[serde(rename = "v")]
+    pub version: u16,
+
+    /// Message kind tag, e.g. "compile_ok", "compile_err".
+    #[serde(rename = "k")]
+    pub ok: bool,
+
+    /// Msgpack bytes for the concrete payload struct.
+    #[serde(with = "serde_bytes", rename = "p")]
+    pub payload: Vec<u8>,
+}
+
 fn main() {
     let mut map: HashMap<String, String> = HashMap::new();
     map.insert(
