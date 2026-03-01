@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/klauspost/compress v1.18.4 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 )
