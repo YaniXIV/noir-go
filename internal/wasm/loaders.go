@@ -8,6 +8,10 @@ import (
 func loadCompiler(w *WasmManager) (*WasmObject, error) {
 
 	ctx := context.Background()
+	noirCompilerWasm, err := decompress(noirCompilerWasmCompressed)
+	if err != nil {
+		return nil, err
+	}
 	compiled, err := w.runtime.CompileModule(ctx, noirCompilerWasm)
 	if err != nil {
 		return nil, err
@@ -24,5 +28,5 @@ func loadVerifier(w *WasmManager) (*WasmObject, error) {
 }
 
 func loadError(w *WasmManager) (*WasmObject, error) {
-	return nil, fmt.Errorf("Unknown wasm type")
+	return nil, fmt.Errorf("unknown wasm type")
 }

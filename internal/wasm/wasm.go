@@ -9,6 +9,7 @@ import (
 
 	"sync"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
@@ -18,8 +19,8 @@ import (
 type WasmType int
 type WasmLoader func(*WasmManager) (*WasmObject, error)
 
-//go:embed noir-compile.wasm
-var noirCompilerWasm []byte
+//go:embed noir-compile.wasm.zst
+var noirCompilerWasmCompressed []byte
 
 const (
 	Compiler WasmType = iota
@@ -126,6 +127,25 @@ func (w *WasmManager) Get(t WasmType) (*WasmObject, error) {
 		fmt.Println("Loader: ", loader)
 	})
 	return inst.object, nil
+}
+
+func decompress(src []byte) ([]byte, error) {
+	decoder, err := zstd.NewReader(nil, zstd.WithDecoderConcurrency(0))
+	if err != nil {
+		return nil, err
+	}
+	defer decoder.Close()
+
+	out, err := decoder.DecodeAll(src, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(out) > 200<<20 { // 200MB cap
+		return nil, fmt.Errorf("decompressed wasm too large: %d bytes", len(out))
+	}
+
+	return out, nil
 }
 
 func runWasmCompiler(wasmBytes []byte) {
