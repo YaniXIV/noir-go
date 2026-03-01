@@ -32,6 +32,8 @@ struct WireCompileResult {
     pub acir_string: String,
     pub acir_bytes: Vec<u8>,
     pub hash: u64,
+    pub private_param_witnesses: Vec<u32>,
+    pub public_param_witnesses: Vec<u32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -226,25 +228,42 @@ fn compile_inner(
     crate_name: &str,
     options: &CompileOptions,
 ) -> Result<WireCompileResult, String> {
-    //panic!("Test panic");
-    let crate_id = prepare_crate(context, Path::new(&crate_name));
-    let result = compile_main(context, crate_id, &options, None);
+    let crate_id = prepare_crate(context, Path::new(crate_name));
+    let result = compile_main(context, crate_id, options, None);
 
     match result {
         Ok((program, _)) => {
-            let acir_bytes = Program::serialize_program(&program.program);
-            // Convert those bytes to a Base64 string
-            //if acir_bytes.len() == 0 {
-            //   panic!("Acir bytes len == 0")
-            // }
-            //let acir_b64 = general_purpose::STANDARD.encode(acir_bytes);
+            let acir_program = &program.program;
+
+            // Serialize ACIR
+            let acir_bytes = Program::serialize_program(acir_program);
+
+            let circuit = &acir_program.functions[0];
+
+            // Extract private witness indices
+            let private_indices: Vec<u32> = circuit
+                .private_parameters
+                .iter()
+                .map(|w| w.witness_index())
+                .collect();
+
+            // Extract public witness indices
+            let public_indices: Vec<u32> = circuit
+                .public_parameters
+                .0
+                .iter()
+                .map(|w| w.witness_index())
+                .collect();
+
             Ok(WireCompileResult {
                 format_version: 1,
                 noir_version: program.noir_version,
                 abi_json: serde_json::to_string(&program.abi).unwrap(),
-                acir_string: program.program.to_string(),
-                acir_bytes: acir_bytes,
+                acir_string: acir_program.to_string(),
+                acir_bytes,
                 hash: program.hash,
+                private_param_witnesses: private_indices,
+                public_param_witnesses: public_indices,
             })
         }
         Err(err) => Err(format!("Compilation failed: {err:?}")),

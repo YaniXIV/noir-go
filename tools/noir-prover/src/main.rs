@@ -1,3 +1,5 @@
+use acir::circuit::Circuit;
+
 fn main() {
     println!("FOOBAR");
 }
@@ -28,6 +30,7 @@ pub extern "C" fn generate_witness(
 ) {
     let acir_bytes = unsafe { std::slice::from_raw_parts(acir_ptr, acir_len) };
     let in_bytes = unsafe { std::slice::from_raw_parts(in_ptr, in_len) };
+    //let circuit = Circuit::
     /*
      * START WORKING ON WINESS GENERATION
      *

@@ -211,6 +211,7 @@ func CompileProgram(w *wasm.WasmManager, projectPath string) ([]byte, error) {
 
 		}
 	*/
+	fmt.Println("3", wire.AbiJSON)
 	//fmt.Println("2", wire.AcirB64)
 	//fmt.Println("3", wire.FormatVersion)
 	//fmt.Println("4", wire.Hash)

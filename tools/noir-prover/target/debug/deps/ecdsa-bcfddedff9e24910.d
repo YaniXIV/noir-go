@@ -1,0 +1,11 @@
+/Users/yani/noir-go/tools/noir-prover/target/debug/deps/ecdsa-bcfddedff9e24910.d: /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/lib.rs /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/recovery.rs /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/der.rs /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/hazmat.rs /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/signing.rs /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/verifying.rs /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/../README.md
+
+/Users/yani/noir-go/tools/noir-prover/target/debug/deps/libecdsa-bcfddedff9e24910.rmeta: /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/lib.rs /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/recovery.rs /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/der.rs /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/hazmat.rs /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/signing.rs /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/verifying.rs /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/../README.md
+
+/Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/lib.rs:
+/Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/recovery.rs:
+/Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/der.rs:
+/Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/hazmat.rs:
+/Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/signing.rs:
+/Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/verifying.rs:
+/Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ecdsa-0.17.0-rc.16/src/../README.md:

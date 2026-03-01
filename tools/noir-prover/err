@@ -1,0 +1,128 @@
+    Checking acvm_blackbox_solver v1.0.0-beta.18 (https://github.com/noir-lang/noir?rev=v1.0.0-beta.18#99bb8b5c)
+error[E0432]: unresolved import `k256::EncodedPoint`
+ --> /Users/yani/.cargo/git/checkouts/noir-f94ec65ebdc2e6cb/99bb8b5/acvm-repo/blackbox_solver/src/ecdsa/secp256k1.rs:6:18
+  |
+6 |     AffinePoint, EncodedPoint, ProjectivePoint, PublicKey,
+  |                  ^^^^^^^^^^^^ no `EncodedPoint` in the root
+
+error[E0432]: unresolved import `p256::EncodedPoint`
+ --> /Users/yani/.cargo/git/checkouts/noir-f94ec65ebdc2e6cb/99bb8b5/acvm-repo/blackbox_solver/src/ecdsa/secp256r1.rs:7:18
+  |
+7 |     AffinePoint, EncodedPoint, ProjectivePoint, PublicKey,
+  |                  ^^^^^^^^^^^^ no `EncodedPoint` in the root
+
+error[E0599]: no function or associated item named `from_encoded_point` found for struct `k256::elliptic_curve::PublicKey` in the current scope
+   --> /Users/yani/.cargo/git/checkouts/noir-f94ec65ebdc2e6cb/99bb8b5/acvm-repo/blackbox_solver/src/ecdsa/secp256k1.rs:60:29
+    |
+60  |     let pubkey = PublicKey::from_encoded_point(&point);
+    |                             ^^^^^^^^^^^^^^^^^^ function or associated item not found in `k256::elliptic_curve::PublicKey<Secp256k1>`
+    |
+note: if you're trying to build a new `k256::elliptic_curve::PublicKey<Secp256k1>` consider using one of the following associated functions:
+      k256::elliptic_curve::PublicKey::<C>::from_affine
+      k256::elliptic_curve::PublicKey::<C>::from_secret_scalar
+      k256::elliptic_curve::PublicKey::<C>::from_sec1_bytes
+   --> /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/elliptic-curve-0.14.0-rc.28/src/public_key.rs:95:5
+    |
+95  |       pub fn from_affine(point: AffinePoint<C>) -> Result<Self> {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+105 |       pub fn from_secret_scalar(scalar: &NonZeroScalar<C>) -> Self {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+119 | /     pub fn from_sec1_bytes(bytes: &[u8]) -> Result<Self>
+120 | |     where
+121 | |         FieldBytesSize<C>: ModulusSize,
+122 | |         AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
+    | |__________________________________________________________^
+    = help: items from traits can only be used if the trait is in scope
+help: trait `FromSec1Point` which provides `from_encoded_point` is implemented but not in scope; perhaps you want to import it
+    |
+1   + use k256::elliptic_curve::sec1::FromSec1Point;
+    |
+help: there is a method `to_encoded_point` with a similar name
+    |
+60  -     let pubkey = PublicKey::from_encoded_point(&point);
+60  +     let pubkey = PublicKey::to_encoded_point(&point);
+    |
+
+error[E0599]: no method named `to_encoded_point` found for struct `AffinePoint` in the current scope
+   --> /Users/yani/.cargo/git/checkouts/noir-f94ec65ebdc2e6cb/99bb8b5/acvm-repo/blackbox_solver/src/ecdsa/secp256k1.rs:99:13
+    |
+99  |     match R.to_encoded_point(false).coordinates() {
+    |             ^^^^^^^^^^^^^^^^
+    |
+   ::: /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/elliptic-curve-0.14.0-rc.28/src/sec1.rs:100:8
+    |
+100 |     fn to_encoded_point(&self, compress: bool) -> Sec1Point<C> {
+    |        ---------------- the method is available for `AffinePoint` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `ToSec1Point` which provides `to_encoded_point` is implemented but not in scope; perhaps you want to import it
+    |
+1   + use k256::elliptic_curve::sec1::ToSec1Point;
+    |
+help: there is a method `to_sec1_point` with a similar name
+    |
+99  -     match R.to_encoded_point(false).coordinates() {
+99  +     match R.to_sec1_point(false).coordinates() {
+    |
+
+error[E0599]: no function or associated item named `from_encoded_point` found for struct `k256::elliptic_curve::PublicKey` in the current scope
+   --> /Users/yani/.cargo/git/checkouts/noir-f94ec65ebdc2e6cb/99bb8b5/acvm-repo/blackbox_solver/src/ecdsa/secp256r1.rs:61:29
+    |
+61  |     let pubkey = PublicKey::from_encoded_point(&point);
+    |                             ^^^^^^^^^^^^^^^^^^ function or associated item not found in `k256::elliptic_curve::PublicKey<NistP256>`
+    |
+note: if you're trying to build a new `k256::elliptic_curve::PublicKey<NistP256>` consider using one of the following associated functions:
+      k256::elliptic_curve::PublicKey::<C>::from_affine
+      k256::elliptic_curve::PublicKey::<C>::from_secret_scalar
+      k256::elliptic_curve::PublicKey::<C>::from_sec1_bytes
+   --> /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/elliptic-curve-0.14.0-rc.28/src/public_key.rs:95:5
+    |
+95  |       pub fn from_affine(point: AffinePoint<C>) -> Result<Self> {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+105 |       pub fn from_secret_scalar(scalar: &NonZeroScalar<C>) -> Self {
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+119 | /     pub fn from_sec1_bytes(bytes: &[u8]) -> Result<Self>
+120 | |     where
+121 | |         FieldBytesSize<C>: ModulusSize,
+122 | |         AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
+    | |__________________________________________________________^
+    = help: items from traits can only be used if the trait is in scope
+help: trait `FromSec1Point` which provides `from_encoded_point` is implemented but not in scope; perhaps you want to import it
+    |
+1   + use k256::elliptic_curve::sec1::FromSec1Point;
+    |
+help: there is a method `to_encoded_point` with a similar name
+    |
+61  -     let pubkey = PublicKey::from_encoded_point(&point);
+61  +     let pubkey = PublicKey::to_encoded_point(&point);
+    |
+
+error[E0599]: no method named `to_encoded_point` found for struct `primeorder::affine::AffinePoint` in the current scope
+   --> /Users/yani/.cargo/git/checkouts/noir-f94ec65ebdc2e6cb/99bb8b5/acvm-repo/blackbox_solver/src/ecdsa/secp256r1.rs:100:13
+    |
+100 |     match R.to_encoded_point(false).coordinates() {
+    |             ^^^^^^^^^^^^^^^^
+    |
+   ::: /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/elliptic-curve-0.14.0-rc.28/src/sec1.rs:100:8
+    |
+100 |     fn to_encoded_point(&self, compress: bool) -> Sec1Point<C> {
+    |        ---------------- the method is available for `primeorder::affine::AffinePoint<NistP256>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: there is a method `to_compact_encoded_point` with a similar name, but with different arguments
+   --> /Users/yani/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/elliptic-curve-0.14.0-rc.28/src/sec1.rs:152:5
+    |
+152 |     fn to_compact_encoded_point(&self) -> CtOption<Sec1Point<C>>;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: trait `ToSec1Point` which provides `to_encoded_point` is implemented but not in scope; perhaps you want to import it
+    |
+1   + use k256::elliptic_curve::sec1::ToSec1Point;
+    |
+
+Some errors have detailed explanations: E0432, E0599.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `acvm_blackbox_solver` (lib) due to 6 previous errors
