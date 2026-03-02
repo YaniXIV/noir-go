@@ -42,6 +42,7 @@ func main() {
 
 # File Tree
 
+```text
 noir-go
 ├── compiler.go
 ├── engine.go
@@ -93,3 +94,4 @@ noir-go
 └── types
     ├── field.go
     └── types.go
+```
