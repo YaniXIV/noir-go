@@ -1,30 +1,28 @@
-package noir
+package noirgo
 
 import (
-	"fmt"
+	"context"
 	"noir-go/internal/compiler"
-	"noir-go/internal/fs"
 )
 
-// Api still in progress
-func MustCompile(projectPath string) {
-
+func Compile(projectPath string) (*compiler.Compilation, error) {
+	return CompileWithContext(context.Background(), projectPath)
 }
 
-func Compile(projectPath string) error {
-
-	w, err := compiler.NewWasmManager()
-	if err != nil == nil {
-
-	} else if w.runtime == nil {
-		return fmt.Errorf("Wasm runtii")
-	}
-
-	data, err := compiler.CompileProgram(projectPath)
-
+func CompileWithContext(ctx context.Context, projectPath string) (*compiler.Compilation, error) {
+	e, err := New()
 	if err != nil {
-		return err
+		return nil, err
 	}
+	defer e.CloseWithContext(ctx) // or defer e.Close(ctx) if you prefer
 
-	return nil
+	return e.CompileWithContext(ctx, projectPath)
+}
+
+func (e *Engine) Compile(projectPath string) (*compiler.Compilation, error) {
+	return e.CompileWithContext(context.Background(), projectPath)
+}
+
+func (e *Engine) CompileWithContext(ctx context.Context, projectPath string) (*compiler.Compilation, error) {
+	return compiler.CompileProgram(ctx, e.wm, projectPath)
 }

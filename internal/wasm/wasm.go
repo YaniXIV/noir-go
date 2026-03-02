@@ -45,6 +45,10 @@ type WasmManager struct {
 	loaders   map[WasmType]WasmLoader
 }
 
+func (w *WasmManager) Close(ctx context.Context) error {
+	return w.runtime.Close(ctx)
+}
+
 func (w *WasmManager) GetInstance(t WasmType) *wasmInstance {
 	return w.instances[t]
 }

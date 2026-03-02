@@ -15,8 +15,7 @@ import (
 	"github.com/tetratelabs/wazero"
 )
 
-func CompileProgram(w *wasm.WasmManager, projectPath string) (*Compilation, error) {
-	ctx := context.Background()
+func CompileProgram(ctx context.Context, w *wasm.WasmManager, projectPath string) (*Compilation, error) {
 
 	// Resolve and Serialize Project
 	r := fs.NewResolver()
