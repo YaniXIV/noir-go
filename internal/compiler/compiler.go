@@ -16,21 +16,6 @@ import (
 	"github.com/tetratelabs/wazero"
 )
 
-type WireCompileResult struct {
-	FormatVersion uint32 `msgpack:"format_version"`
-	NoirVersion   string `msgpack:"noir_version"`
-	AbiJSON       string `msgpack:"abi_json"`
-	AcirString    string `msgpack:"acir_string"`
-	AcirBytes     []int  `msgpack:"acir_bytes"`
-	Hash          uint64 `msgpack:"hash"`
-}
-
-type AcirBlob []byte
-type wasmBuf struct {
-	ptr uint32
-	len uint32
-}
-
 // simple compile function.
 func Compile(projectPath string) {
 
@@ -44,8 +29,45 @@ func Compile(projectPath string) {
 	fmt.Println(projectData)
 
 }
+func CompileProgram(w *wasm.WasmManager, projectPath string) (*WireCompileResult, error) {
+	ctx := context.Background()
 
-func CompileProgram(w *wasm.WasmManager, projectPath string) ([]byte, error) {
+	// 1. Resolve and Serialize Project
+	r := fs.NewResolver()
+	r.Resolve(projectPath)
+	projectData, err := r.Serialize()
+	if err != nil {
+		return nil, fmt.Errorf("project serialization failed: %w", err)
+	}
+
+	// 2. Setup WASM Instance
+	obj, err := w.Get(wasm.Compiler)
+	if err != nil || obj == nil {
+		return nil, fmt.Errorf("failed to get compiler wasm: %v", err)
+	}
+
+	mod, err := w.Instantiate(ctx, obj.Compiled, wazero.NewModuleConfig())
+	if err != nil {
+		return nil, err
+	}
+	defer mod.Close(ctx)
+
+	// 3. Call Bridge
+	resultPayload, err := callWasmCompile(ctx, mod, projectData)
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. Unmarshal
+	var wire WireCompileResult
+	if err := msgpack.Unmarshal(resultPayload, &wire); err != nil {
+		return nil, fmt.Errorf("msgpack unmarshal failed: %w", err)
+	}
+
+	return &wire, nil
+}
+
+func CompileProgramm(w *wasm.WasmManager, projectPath string) ([]byte, error) {
 	obj, err := w.Get(wasm.Compiler)
 	if obj == nil {
 		fmt.Println("OBJECT IS INVALID")
@@ -212,6 +234,8 @@ func CompileProgram(w *wasm.WasmManager, projectPath string) ([]byte, error) {
 		}
 	*/
 	fmt.Println("3", wire.AbiJSON)
+	fmt.Println("4", wire.PrivateParamWitnesses, "private witness params")
+	fmt.Println("5", wire.AbiJSON, "public witness params")
 	//fmt.Println("2", wire.AcirB64)
 	//fmt.Println("3", wire.FormatVersion)
 	//fmt.Println("4", wire.Hash)

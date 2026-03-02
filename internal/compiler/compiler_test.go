@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"fmt"
 	"noir-go/internal/wasm"
 )
 
@@ -26,7 +27,10 @@ func TestCompileProgram(t *testing.T) {
 		t.Fatalf("CompileProgram failed: %v", err)
 	}
 
+	fmt.Println(out)
+	/**
 	if out == nil || len(out) == 0 {
 		t.Skip("CompileProgram does not return bytes yet; enable once implemented")
 	}
+	*/
 }
