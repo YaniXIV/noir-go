@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"noir-go/internal/compiler"
-	"noir-go/internal/wasm"
+	"github.com/YaniXIV/noir-go/internal/compiler"
+	"github.com/YaniXIV/noir-go/internal/wasm"
 )
 
 func TestCompileProgramTimingsFromWasm(t *testing.T) {

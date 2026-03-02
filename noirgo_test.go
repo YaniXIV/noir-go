@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"fmt"
-	noirgo "noir-go"
+	noirgo "github.com/YaniXIV/noir-go"
 )
 
 func TestNoirGo(t *testing.T) {

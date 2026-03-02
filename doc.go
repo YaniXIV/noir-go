@@ -9,5 +9,5 @@
 //	if err != nil {
 //		log.Fatal(err)
 //	}
-//	_ = comp.ACIR
+//	acir := comp.ACIR
 package noirgo

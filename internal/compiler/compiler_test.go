@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"noir-go/internal/wasm"
+	"github.com/YaniXIV/noir-go/internal/wasm"
 )
 
 func TestCompileProgram(t *testing.T) {

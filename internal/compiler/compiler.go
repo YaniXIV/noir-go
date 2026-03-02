@@ -8,8 +8,8 @@ import (
 	//"encoding/base64"
 	"fmt"
 	"github.com/vmihailenco/msgpack/v5"
-	"noir-go/internal/fs"
-	"noir-go/internal/wasm"
+	"github.com/YaniXIV/noir-go/internal/fs"
+	"github.com/YaniXIV/noir-go/internal/wasm"
 	"unsafe"
 
 	"github.com/tetratelabs/wazero"

@@ -2,7 +2,7 @@ package noirgo
 
 import (
 	"context"
-	"noir-go/internal/compiler"
+	"github.com/YaniXIV/noir-go/internal/compiler"
 )
 
 // Compile compiles a Noir project at projectPath using a background context.

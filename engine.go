@@ -2,7 +2,7 @@ package noirgo
 
 import (
 	"context"
-	"noir-go/internal/wasm"
+	"github.com/YaniXIV/noir-go/internal/wasm"
 )
 
 // Engine owns the WASM runtime used to compile Noir projects.
