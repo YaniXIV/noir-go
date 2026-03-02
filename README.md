@@ -10,6 +10,10 @@ This is a free-time project.
 
 Future direction: a Go-native ZK experience with as few external dependencies as possible, ideally as simple as `go get github.com/YaniXIV/noir-go` and `import "github.com/YaniXIV/noir-go"`.
 
+# Documentation
+
+Once published, package docs will be available on `https://pkg.go.dev/github.com/YaniXIV/noir-go`.
+
 # Compile Example
 
 Below is a minimal example showing how to compile a Noir project from Go. The `projectPath` should point to a Noir project directory that contains a `Nargo.toml`.

@@ -47,13 +47,11 @@ func parseNargo(fp string) (*NargoManifest, error) {
 	if !fileExists {
 		return nil, fmt.Errorf("cannot find a nargo.toml for %v", fp)
 	} else {
-		log.Println("this file exists!")
 	}
 
 	if _, err := toml.DecodeFile(filePath, &nargoFile); err != nil {
 		return nil, err
 	}
-	fmt.Println(nargoFile)
 	return &nargoFile, nil
 }
 

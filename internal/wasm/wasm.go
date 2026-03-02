@@ -128,7 +128,6 @@ func (w *WasmManager) Get(t WasmType) (*WasmObject, error) {
 
 	inst.once.Do(func() {
 		inst.object, inst.err = loader(w)
-		fmt.Println("Loader: ", loader)
 	})
 	return inst.object, nil
 }
@@ -191,12 +190,8 @@ func runWasmCompiler(wasmBytes []byte) {
 	if fn != nil {
 		_, err := fn.Call(ctx)
 		if err != nil {
-			fmt.Printf("function call error: %v\n", err)
 		}
 	}
 
 	// 8. Print output
-	fmt.Println("--- start of wasm logs ---")
-	fmt.Print(outputBuf.String())
-	fmt.Println("--- end of wasm logs ---")
 }
