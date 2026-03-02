@@ -8,7 +8,7 @@ import (
 )
 
 func TestNoirGo(t *testing.T) {
-	c, err := noirgo.Compile("/Users/yani/noir-go/internal/compiler/noirtest")
+	c, err := noirgo.Compile("internal/compiler/noirtest")
 	if err != nil {
 		panic(err)
 	}
