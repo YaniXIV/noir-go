@@ -33,3 +33,11 @@ func (e *Engine) Close() error {
 func (e *Engine) CloseWithContext(ctx context.Context) error {
 	return e.wm.Close(ctx)
 }
+
+func (e *Engine) WarmupModules() error {
+	err := e.wm.Warmup()
+	if err != nil {
+		return err
+	}
+	return nil
+}
