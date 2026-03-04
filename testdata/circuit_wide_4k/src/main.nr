@@ -1,4 +1,4 @@
-fn main(inputs: [Field; 4096], seed: Field) -> pub Field {
+fn main( inputs: pub [Field; 4096], seed: Field) -> pub Field {
     let mut acc = seed;
 
     for i in 0..4096 {

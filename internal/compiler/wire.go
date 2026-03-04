@@ -29,11 +29,12 @@ func (w *WireCompileResult) processCompilation() (*Compilation, error) {
 	}
 
 	// Build ordered witness indices in the ABI parameter order
-	ordered, err := orderedParamWitnessIndices(abi.Parameters, w.PrivateParamWitnesses, w.PublicParamWitnesses)
+	/*ordered, err := orderedParamWitnessIndices(abi.Parameters, w.PrivateParamWitnesses, w.PublicParamWitnesses)
 	if err != nil {
 		return nil, err
 	}
 	abi.ParameterWitnessIndices = ordered
+	*/
 
 	// Build Compilation
 	comp := &Compilation{
@@ -44,6 +45,9 @@ func (w *WireCompileResult) processCompilation() (*Compilation, error) {
 		PrivateParamWitnesses: append([]uint32(nil), w.PrivateParamWitnesses...),
 		PublicParamWitnesses:  append([]uint32(nil), w.PublicParamWitnesses...),
 	}
+	//fmt.Println(acirBytes)
+	//fmt.Println(w.PrivateParamWitnesses)
+	fmt.Println(w.PublicParamWitnesses)
 
 	return comp, nil
 }

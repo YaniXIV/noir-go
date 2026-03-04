@@ -33,7 +33,7 @@ func TestCompileProgram(t *testing.T) {
 
 	// --- CompileProgram ---
 	start = time.Now()
-	projectPath := filepath.Join("../../testdata/circuit_constraints_20k")
+	projectPath := filepath.Join("../../testdata/circuit_wide_4k")
 	_, err = CompileProgram(context.Background(), w, projectPath)
 	if err != nil {
 		t.Fatalf("CompileProgram failed: %v", err)

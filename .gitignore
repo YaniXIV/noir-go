@@ -1,4 +1,12 @@
-.idea/
 .DS_Store
+.idea/
+
+# Rust build artifacts
+**/target/
+**/*.rlib
+**/*.rmeta
+**/*.dylib
+
+# Project docs
 tools/**/*.md
 internal/**/*.md
