@@ -1,24 +1,26 @@
 # noir-go
 
-A personal project to make Noir usable directly from Go. The goal is a full Go library/SDK that covers the Noir lifecycle: compile, prove, and verify.
+A Go library for compiling [Noir](https://noir-lang.org/) circuits without requiring a local Noir toolchain.
 
-This is early and not production ready. The compiler bridge works, but it still needs hardening. The API is not stable yet. Under the hood, the compiler runs via WASM to keep the toolchain portable while presenting a Go-first API.
+The compiler runs via an embedded WASM binary (zst-compressed), so there are no external dependencies. Just a standard Go module.
 
-If you are interested, contributions and feedback are welcome.
+```sh
+go get github.com/YaniXIV/noir-go
+```
 
-This is a free-time project.
+> **Status:** Early stage. The compiler bridge works. The API is not stable yet and the library is not production ready. Contributions and feedback welcome.
 
-Future direction: a Go-native ZK experience with as few external dependencies as possible, ideally as simple as `go get github.com/YaniXIV/noir-go` and `import "github.com/YaniXIV/noir-go"`.
+---
 
-# Documentation
+## How it works
 
-Once published, package docs will be available on `https://pkg.go.dev/github.com/YaniXIV/noir-go`.
+Most Go projects that need Noir have to shell out to the Nargo CLI or manage a local Noir toolchain. noir-go embeds the Noir compiler as a WASM binary and runs it via [wazero](https://github.com/tetratelabs/wazero). No Rust, no Nargo, no external toolchain required. Just `go get` and import.
 
-# Compile Example
+The Go side resolves the Noir project (reads `Nargo.toml`, finds `.nr` sources, resolves path dependencies), serializes it via msgpack, and calls into the WASM compiler. The result is decoded into Go-native types containing the ACIR artifact, ABI, and witness indices.
 
-Below is a minimal example showing how to compile a Noir project from Go. The `projectPath` should point to a Noir project directory that contains a `Nargo.toml`.
+---
 
-# Compile Example
+## Usage
 
 ```go
 package main
@@ -44,58 +46,20 @@ func main() {
 }
 ```
 
-# File Tree
+The `projectPath` should point to a Noir project directory containing a `Nargo.toml`.
 
-```text
-noir-go
-├── compiler.go
-├── engine.go
-├── go.mod
-├── go.sum
-├── internal
-│   ├── compiler
-│   │   ├── bridge.go
-│   │   ├── compiler_test.go
-│   │   ├── compiler.go
-│   │   ├── noirtest
-│   │   ├── types.go
-│   │   └── wire.go
-│   ├── fs
-│   │   ├── fs_test.go
-│   │   ├── nargo.go
-│   │   ├── project.go
-│   │   └── resolver.go
-│   └── wasm
-│       ├── loaders.go
-│       ├── noir-compile.wasm.zst
-│       ├── wasm_test.go
-│       └── wasm.go
-├── LICENSE
-├── noirgo_test.go
-├── out
-├── README.md
-├── tools
-│   ├── experimentation
-│   │   ├── Nargo.toml
-│   │   ├── src
-│   │   ├── target
-│   │   └── time.txt
-│   ├── makefile
-│   ├── noir-compile
-│   │   ├── Cargo.lock
-│   │   ├── Cargo.toml
-│   │   ├── FAILURE_POINTS.md
-│   │   ├── moreNotes.md
-│   │   ├── note.md
-│   │   ├── src
-│   │   └── target
-│   └── noir-prover
-│       ├── Cargo.lock
-│       ├── Cargo.toml
-│       ├── err
-│       ├── src
-│       └── target
-└── types
-    ├── field.go
-    └── types.go
-```
+Package docs are available on [pkg.go.dev](https://pkg.go.dev/github.com/YaniXIV/noir-go).
+
+---
+
+## Roadmap
+
+- [x] Compiler bridge (WASM via wazero)
+- [x] Project resolution (Nargo.toml, path dependencies)
+- [x] ACIR artifact + witness index metadata from compile results
+- [ ] Witness generation
+- [ ] Prover integration
+- [ ] Verifier integration
+- [ ] Stable public API
+
+The goal is a Go-native ZK experience covering the full Noir lifecycle: compile, prove, and verify. With as few external toolchain dependencies as possible.

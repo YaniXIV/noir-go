@@ -10,3 +10,6 @@
 # Project docs
 tools/**/*.md
 internal/**/*.md
+
+*.md
+testdata
