@@ -7,9 +7,9 @@ import (
 	//"encoding/json"
 	//"encoding/base64"
 	"fmt"
-	"github.com/vmihailenco/msgpack/v5"
 	"github.com/YaniXIV/noir-go/internal/fs"
 	"github.com/YaniXIV/noir-go/internal/wasm"
+	"github.com/vmihailenco/msgpack/v5"
 	"unsafe"
 
 	"github.com/tetratelabs/wazero"
@@ -60,23 +60,4 @@ func printLogs(outBuf *bytes.Buffer) {
 	fmt.Println("--- Start of wasm logs ---")
 	fmt.Println(outBuf.String())
 	fmt.Println("--- End of wasm logs ---")
-}
-
-func readBytes(addr uintptr, size int) ([]byte, error) {
-	if size < 1 {
-		return nil, fmt.Errorf("data size cannot be < 1")
-	}
-	var AcirBlob []byte = make([]byte, size)
-	data := unsafe.Slice((*byte)(unsafe.Pointer(addr)), size)
-	copy(data, AcirBlob)
-	if len(AcirBlob) < 1 {
-		return nil, fmt.Errorf("Error writting data")
-	}
-	return AcirBlob, nil
-
-}
-
-func writeBytes(addr uintptr, data []byte) {
-	dst := unsafe.Slice((*byte)(unsafe.Pointer(addr)), len(data))
-	copy(dst, data)
 }
