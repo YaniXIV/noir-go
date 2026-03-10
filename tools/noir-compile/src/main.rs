@@ -31,6 +31,7 @@ struct WireCompileResult {
     pub abi_json: String,
     pub acir_string: String,
     pub acir_bytes: Vec<u8>,
+    pub acir_json: String,
     pub hash: u64,
     pub private_param_witnesses: Vec<u32>,
     pub public_param_witnesses: Vec<u32>,
@@ -239,6 +240,7 @@ fn compile_inner(
             let acir_bytes = Program::serialize_program(acir_program);
 
             let circuit = &acir_program.functions[0];
+            let acir_json = serde_json::to_string(acir_program).unwrap();
 
             // Extract private witness indices
             let private_indices: Vec<u32> = circuit
