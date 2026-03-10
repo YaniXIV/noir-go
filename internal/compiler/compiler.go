@@ -10,7 +10,6 @@ import (
 	"github.com/YaniXIV/noir-go/internal/fs"
 	"github.com/YaniXIV/noir-go/internal/wasm"
 	"github.com/vmihailenco/msgpack/v5"
-	"unsafe"
 
 	"github.com/tetratelabs/wazero"
 )

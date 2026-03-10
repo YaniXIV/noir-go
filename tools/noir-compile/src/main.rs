@@ -263,6 +263,7 @@ fn compile_inner(
                 abi_json: serde_json::to_string(&program.abi).unwrap(),
                 acir_string: acir_program.to_string(),
                 acir_bytes,
+                acir_json: acir_json,
                 hash: program.hash,
                 private_param_witnesses: private_indices,
                 public_param_witnesses: public_indices,

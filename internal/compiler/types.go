@@ -38,6 +38,7 @@ type WireCompileResult struct {
 	AbiJSON               string   `msgpack:"abi_json"`
 	AcirString            string   `msgpack:"acir_string"`
 	AcirBytes             []int    `msgpack:"acir_bytes"`
+	AcirJson              string   `msgpack:"acir_json"`
 	Hash                  uint64   `msgpack:"hash"`
 	PrivateParamWitnesses []uint32 `msgpack:"private_param_witnesses"`
 	PublicParamWitnesses  []uint32 `msgpack:"public_param_witnesses"`

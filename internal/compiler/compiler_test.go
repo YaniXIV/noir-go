@@ -9,6 +9,9 @@ import (
 	"github.com/YaniXIV/noir-go/internal/wasm"
 )
 
+const circuit_wide_4k = "../../testdata/circuit_wide_4k"
+const regtest = "noirtest"
+
 func TestCompileProgram(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping wasm compile in short mode")
@@ -33,7 +36,7 @@ func TestCompileProgram(t *testing.T) {
 
 	// --- CompileProgram ---
 	start = time.Now()
-	projectPath := filepath.Join("../../testdata/circuit_wide_4k")
+	projectPath := filepath.Join(regtest)
 	_, err = CompileProgram(context.Background(), w, projectPath)
 	if err != nil {
 		t.Fatalf("CompileProgram failed: %v", err)

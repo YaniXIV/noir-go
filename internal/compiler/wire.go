@@ -47,7 +47,7 @@ func (w *WireCompileResult) processCompilation() (*Compilation, error) {
 	}
 	//fmt.Println(acirBytes)
 	//fmt.Println(w.PrivateParamWitnesses)
-	fmt.Println(w.PublicParamWitnesses)
+	fmt.Println(w.AcirJson)
 
 	return comp, nil
 }
