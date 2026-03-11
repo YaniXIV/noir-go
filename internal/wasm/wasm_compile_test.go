@@ -50,7 +50,7 @@ func TestCompileProgramTimingsFromWasm(t *testing.T) {
 	if compilation == nil {
 		t.Fatalf("expected non-nil compilation result")
 	}
-	if len(compilation.ACIR) == 0 {
+	if len(compilation.ACIR.Bytes) == 0 {
 		t.Fatalf("expected non-empty ACIR result")
 	}
 	t.Logf("CompileProgram duration: %s", time.Since(stepStart))
@@ -101,7 +101,7 @@ func TestCompileProgramTimingsFromWarmup(t *testing.T) {
 	if compilation == nil {
 		t.Fatalf("expected non-nil compilation result")
 	}
-	if len(compilation.ACIR) == 0 {
+	if len(compilation.ACIR.Bytes) == 0 {
 		t.Fatalf("expected non-empty ACIR result")
 	}
 	t.Logf("CompileProgram duration: %s", time.Since(stepStart))

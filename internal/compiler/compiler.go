@@ -9,12 +9,13 @@ import (
 	"fmt"
 	"github.com/YaniXIV/noir-go/internal/fs"
 	"github.com/YaniXIV/noir-go/internal/wasm"
+	"github.com/YaniXIV/noir-go/result"
 	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/tetratelabs/wazero"
 )
 
-func CompileProgram(ctx context.Context, w *wasm.WasmManager, projectPath string) (*Compilation, error) {
+func CompileProgram(ctx context.Context, w *wasm.WasmManager, projectPath string) (*result.Compilation, error) {
 
 	// Resolve and Serialize Project
 	r := fs.NewResolver()

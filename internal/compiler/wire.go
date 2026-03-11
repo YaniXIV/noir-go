@@ -4,13 +4,14 @@ package compiler
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/YaniXIV/noir-go/result"
 )
 
 // ProcessCompilation converts the wire format coming back from wasm/msgpack
 // into an internal Compilation object + parsed ABI with ordered param witness indices.
-func (w *WireCompileResult) processCompilation() (*Compilation, error) {
+func (w *WireCompileResult) processCompilation() (*result.Compilation, error) {
 	// 1) Parse ABI JSON
-	var abi ABI
+	var abi result.ABI
 	if w.AbiJSON != "" {
 		if err := json.Unmarshal([]byte(w.AbiJSON), &abi); err != nil {
 			return nil, fmt.Errorf("parse abi_json: %w", err)
@@ -37,8 +38,8 @@ func (w *WireCompileResult) processCompilation() (*Compilation, error) {
 	*/
 
 	// Build Compilation
-	comp := &Compilation{
-		ACIR:                  ACIR{acirBytes, w.AcirJSON},
+	comp := &result.Compilation{
+		ACIR:                  result.ACIR{acirBytes, w.AcirJSON},
 		ABI:                   abi,
 		NoirVersion:           w.NoirVersion,
 		Hash:                  w.Hash,
@@ -62,7 +63,7 @@ func intsToBytes(src []int) ([]byte, error) {
 	return out, nil
 }
 
-func orderedParamWitnessIndices(params []ABIParameter, priv []uint32, pub []uint32) ([]uint32, error) {
+func orderedParamWitnessIndices(params []result.ABIParameter, priv []uint32, pub []uint32) ([]uint32, error) {
 	out := make([]uint32, 0, len(params))
 
 	pi, pu := 0, 0
