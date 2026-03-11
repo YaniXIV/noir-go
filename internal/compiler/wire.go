@@ -38,7 +38,7 @@ func (w *WireCompileResult) processCompilation() (*Compilation, error) {
 
 	// Build Compilation
 	comp := &Compilation{
-		ACIR:                  acirBytes,
+		ACIR:                  ACIR{acirBytes, w.AcirJson},
 		ABI:                   abi,
 		NoirVersion:           w.NoirVersion,
 		Hash:                  w.Hash,

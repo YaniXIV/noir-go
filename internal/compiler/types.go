@@ -21,8 +21,12 @@ type ABIType struct {
 
 type AcirBlob []byte
 
+type ACIR struct {
+	AcirBytes []byte
+	AcirJson  string
+}
 type Compilation struct {
-	ACIR []byte
+	ACIR ACIR
 	ABI  ABI
 
 	NoirVersion string
