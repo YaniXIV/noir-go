@@ -44,3 +44,14 @@ func TestWasmManagerGetCompiler(t *testing.T) {
 	}
 	t.Logf("Get(Compiler) second call duration: %s", time.Since(stepStart))
 }
+
+func TestWarmup(t *testing.T) {
+	w, err := NewWasmManager()
+	if err != nil {
+		t.Fatalf("NewWasmManager failed: %v", err)
+	}
+	err = w.Warmup()
+	if err != nil {
+		t.Fatalf("Module Warmup failed")
+	}
+}

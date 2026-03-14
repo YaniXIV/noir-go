@@ -92,16 +92,18 @@ func InitializeWasmInstance() *wasmInstance {
 func (w *WasmManager) Warmup() error {
 	_, errCompiler := w.Get(Compiler)
 	if errCompiler != nil {
-		panic(errCompiler)
+		return errCompiler
 	}
-	_, errProver := w.Get(Prover)
-	if errProver != nil {
-		panic(errProver)
-	}
-	_, errVerifier := w.Get(Verifier)
-	if errVerifier != nil {
-		panic(errVerifier)
-	}
+	/*
+		_, errProver := w.Get(Prover)
+		if errProver != nil {
+			panic(errProver)
+		}
+		_, errVerifier := w.Get(Verifier)
+		if errVerifier != nil {
+			panic(errVerifier)
+		}
+	*/
 	return nil
 
 }
