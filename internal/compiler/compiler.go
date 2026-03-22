@@ -13,10 +13,15 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/tetratelabs/wazero"
+	"os"
 )
 
 func CompileProgram(ctx context.Context, w *wasm.WasmManager, projectPath string) (*result.Compilation, error) {
-
+	// make sure the filepath actually exists, if not exit before doing expensive calls.
+	_, err := os.Stat(projectPath)
+	if err == nil {
+		return nil, err
+	}
 	// Resolve and Serialize Project
 	r := fs.NewResolver()
 	r.Resolve(projectPath)
