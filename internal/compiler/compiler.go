@@ -19,7 +19,7 @@ import (
 func CompileProgram(ctx context.Context, w *wasm.WasmManager, projectPath string) (*result.Compilation, error) {
 	// make sure the filepath actually exists, if not exit before doing expensive calls.
 	_, err := os.Stat(projectPath)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 	// Resolve and Serialize Project
