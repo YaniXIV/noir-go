@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -47,4 +48,17 @@ func TestCompileProgram(t *testing.T) {
 	//t.Logf("Test Output: %+v", out)
 
 	t.Logf("TOTAL TEST TIME took %s", time.Since(totalStart))
+}
+
+func TestCompileProgramReturnsResolverError(t *testing.T) {
+	tmp := t.TempDir()
+	err := os.WriteFile(filepath.Join(tmp, "Nargo.toml"), []byte("[package]\nname = \"tmp\"\ntype = \"bin\"\n\n[dependencies]\n"), 0644)
+	if err != nil {
+		t.Fatalf("write Nargo.toml: %v", err)
+	}
+
+	_, err = CompileProgram(context.Background(), nil, tmp)
+	if err == nil {
+		t.Fatalf("expected resolver error")
+	}
 }

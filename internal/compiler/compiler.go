@@ -24,7 +24,9 @@ func CompileProgram(ctx context.Context, w *wasm.WasmManager, projectPath string
 	}
 	// Resolve and Serialize Project
 	r := fs.NewResolver()
-	r.Resolve(projectPath)
+	if err := r.Resolve(projectPath); err != nil {
+		return nil, fmt.Errorf("resolve noir project %q: %w", projectPath, err)
+	}
 	projectData, err := r.Serialize()
 	if err != nil {
 		return nil, fmt.Errorf("project serialization failed: %w", err)
@@ -40,7 +42,7 @@ func CompileProgram(ctx context.Context, w *wasm.WasmManager, projectPath string
 	if err != nil {
 		return nil, err
 	}
-	defer mod.Close(ctx)
+	defer mod.Close(context.Background())
 
 	// Call Bridge
 	resultPayload, err := callWasmCompile(ctx, mod, projectData)

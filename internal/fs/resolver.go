@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/vmihailenco/msgpack/v5"
 	"maps"
+	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -13,15 +15,33 @@ type Resolver struct {
 	projects map[string]*NoirProject // path → project
 	AllFiles map[string]string       // global merged files
 	crate    string                  //Crate name
+	cacheDir string
+	client   *http.Client
 }
 
 func NewResolver() *Resolver {
+	cacheDir := defaultDependencyCacheDir()
 	return &Resolver{
 		visited:  make(map[string]bool),
 		projects: make(map[string]*NoirProject),
 		AllFiles: make(map[string]string),
 		crate:    "",
+		cacheDir: cacheDir,
+		client:   http.DefaultClient,
 	}
+}
+
+func newResolverForTest(cacheDir string, client *http.Client) *Resolver {
+	if cacheDir == "" {
+		cacheDir = defaultDependencyCacheDir()
+	}
+	if client == nil {
+		client = http.DefaultClient
+	}
+	r := NewResolver()
+	r.cacheDir = cacheDir
+	r.client = client
+	return r
 }
 
 func (r *Resolver) Resolve(root string) error {
@@ -78,6 +98,16 @@ func (r *Resolver) Resolve(root string) error {
 			if err := r.Resolve(next); err != nil {
 				return err
 			}
+			continue
+		}
+		if _, ok := dep["git"]; ok {
+			next, err := r.resolveRemoteDependency(dep)
+			if err != nil {
+				return err
+			}
+			if err := r.Resolve(next); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -91,4 +121,12 @@ func (r *Resolver) Serialize() ([]byte, error) {
 		return nil, err
 	}
 	return b, err
+}
+
+func defaultDependencyCacheDir() string {
+	cacheRoot, err := os.UserCacheDir()
+	if err != nil {
+		cacheRoot = os.TempDir()
+	}
+	return filepath.Join(cacheRoot, "noir-go")
 }

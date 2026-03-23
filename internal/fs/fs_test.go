@@ -67,3 +67,17 @@ func TestResolverMissingEntry(t *testing.T) {
 		t.Fatalf("expected error when main.nr or lib.nr is missing")
 	}
 }
+
+func TestReadFileNROversized(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "big.nr")
+
+	data := make([]byte, maxNoirFileSize+1)
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		t.Fatalf("write oversized noir file: %v", err)
+	}
+
+	if _, err := readFileNR(path); err == nil {
+		t.Fatalf("expected oversized file error")
+	}
+}

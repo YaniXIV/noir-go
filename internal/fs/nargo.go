@@ -3,7 +3,6 @@ package fs
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -56,23 +55,22 @@ func parseNargo(fp string) (*NargoManifest, error) {
 }
 
 // read a singular .nr file into memory.
-func readFileNR(filePath string) string {
-	//make sure the file exists
+func readFileNR(filePath string) (string, error) {
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("stat noir file %q: %w", filePath, err)
 	}
-	//check file size before reading into mem. limit of 5mb per file.
+
 	if fileInfo.Size() > maxNoirFileSize {
-		panic(fmt.Sprintf("File size for %s too big", filePath))
+		return "", fmt.Errorf("noir file %q exceeds size limit of %d bytes", filePath, maxNoirFileSize)
 	}
+
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("read noir file %q: %w", filePath, err)
 	}
 
-	return string(data)
-
+	return string(data), nil
 }
 
 // fileExists checks if a file or directory exists.

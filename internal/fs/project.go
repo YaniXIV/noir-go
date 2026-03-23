@@ -27,7 +27,10 @@ func (p *NoirProject) LoadFiles() error {
 		if !matched {
 			return nil
 		}
-		content := readFileNR(path)
+		content, err := readFileNR(path)
+		if err != nil {
+			return err
+		}
 
 		// add to our map
 		p.Files[path] = content

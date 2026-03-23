@@ -40,7 +40,7 @@ func main() {
 		log.Fatalf("compile failed: %v", err)
 	}
 
-	fmt.Printf("ACIR size: %d bytes\n", len(comp.ACIR))
+	fmt.Printf("ACIR size: %d bytes\n", len(comp.ACIR.Bytes))
 	fmt.Printf("Public witnesses: %v\n", comp.PublicParamWitnesses)
 	fmt.Printf("Private witnesses: %v\n", comp.PrivateParamWitnesses)
 }

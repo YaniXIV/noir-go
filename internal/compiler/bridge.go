@@ -12,6 +12,15 @@ func callWasmCompile(ctx context.Context, mod api.Module, input []byte) ([]byte,
 	alloc := mod.ExportedFunction("alloc")
 	dealloc := mod.ExportedFunction("dealloc")
 	compileFn := mod.ExportedFunction("compile_wasm")
+	if alloc == nil {
+		return nil, fmt.Errorf("wasm export %q not found", "alloc")
+	}
+	if dealloc == nil {
+		return nil, fmt.Errorf("wasm export %q not found", "dealloc")
+	}
+	if compileFn == nil {
+		return nil, fmt.Errorf("wasm export %q not found", "compile_wasm")
+	}
 
 	// Allocate and Write Input
 	inputSize := uint64(len(input))
@@ -49,6 +58,9 @@ func callWasmCompile(ctx context.Context, mod api.Module, input []byte) ([]byte,
 	}
 	retPtr := binary.LittleEndian.Uint32(buf[0:4])
 	retLen := binary.LittleEndian.Uint32(buf[4:8])
+	if retLen > 0 {
+		defer dealloc.Call(ctx, uint64(retPtr), uint64(retLen))
+	}
 
 	// Read the actual result bytes
 	resultBytes, ok := mod.Memory().Read(retPtr, retLen)
