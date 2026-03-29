@@ -12,6 +12,7 @@ import (
 
 const circuit_wide_4k = "../../testdata/circuit_wide_4k"
 const regtest = "noirtest"
+const circuit_simple = "../../testdata/circuit_simple"
 
 func TestCompileProgram(t *testing.T) {
 	if testing.Short() {
@@ -61,4 +62,61 @@ func TestCompileProgramReturnsResolverError(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected resolver error")
 	}
+}
+
+func TestExecuteProgram_SmallCircuit(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping wasm execute in short mode")
+	}
+
+	ctx := context.Background()
+
+	w, err := wasm.NewWasmManager()
+	if err != nil {
+		t.Fatalf("NewWasmManager: %v", err)
+	}
+	defer w.Close(ctx)
+
+	comp, err := CompileProgram(ctx, w, circuit_simple)
+	if err != nil {
+		t.Fatalf("CompileProgram: %v", err)
+	}
+
+	t.Logf("private witnesses: %v", comp.PrivateParamWitnesses)
+	t.Logf("public witnesses: %v", comp.PublicParamWitnesses)
+
+	inputs := make(map[uint32][32]byte)
+	for _, idx := range comp.PrivateParamWitnesses {
+		var val [32]byte
+		val[31] = 3
+		inputs[idx] = val
+	}
+	for _, idx := range comp.PublicParamWitnesses {
+		var val [32]byte
+		val[31] = 3
+		inputs[idx] = val
+	}
+
+	solved, err := ExecuteProgram(ctx, w, comp, inputs)
+	if err != nil {
+		t.Fatalf("ExecuteProgram: %v", err)
+	}
+
+	if len(solved) == 0 {
+		t.Fatal("solved witness is empty")
+	}
+
+	t.Logf("solved witness entries: %d", len(solved))
+	for idx, val := range solved {
+		t.Logf("  witness[%d] = %x", idx, val)
+	}
+}
+
+func buildInitialWitnessRaw(inputs map[uint32][32]byte) []interface{} {
+	var out []interface{}
+	for idx, val := range inputs {
+		v := val
+		out = append(out, []interface{}{idx, v[:]})
+	}
+	return out
 }

@@ -74,3 +74,64 @@ func callWasmCompile(ctx context.Context, mod api.Module, input []byte) ([]byte,
 
 	return out, nil
 }
+
+func callWasmExecute(ctx context.Context, mod api.Module, input []byte) ([]byte, error) {
+	alloc := mod.ExportedFunction("alloc")
+	dealloc := mod.ExportedFunction("dealloc")
+	executeFn := mod.ExportedFunction("execute_wasm")
+
+	if alloc == nil {
+		return nil, fmt.Errorf("wasm export %q not found", "alloc")
+	}
+	if dealloc == nil {
+		return nil, fmt.Errorf("wasm export %q not found", "dealloc")
+	}
+	if executeFn == nil {
+		return nil, fmt.Errorf("wasm export %q not found", "execute_wasm")
+	}
+
+	inputSize := uint64(len(input))
+	res, err := alloc.Call(ctx, inputSize)
+	if err != nil {
+		return nil, fmt.Errorf("alloc input failed: %w", err)
+	}
+	inPtr := uint32(res[0])
+	defer dealloc.Call(ctx, uint64(inPtr), inputSize)
+
+	if !mod.Memory().Write(inPtr, input) {
+		return nil, fmt.Errorf("failed to write input to wasm memory")
+	}
+
+	resPtrAlloc, err := alloc.Call(ctx, 8)
+	if err != nil {
+		return nil, fmt.Errorf("alloc res holder failed: %w", err)
+	}
+	outStructPtr := uint32(resPtrAlloc[0])
+	defer dealloc.Call(ctx, uint64(outStructPtr), 8)
+
+	_, err = executeFn.Call(ctx, uint64(outStructPtr), uint64(inPtr), inputSize)
+	if err != nil {
+		return nil, fmt.Errorf("execute_wasm execution failed: %w", err)
+	}
+
+	buf, ok := mod.Memory().Read(outStructPtr, 8)
+	if !ok {
+		return nil, fmt.Errorf("failed to read output header")
+	}
+	retPtr := binary.LittleEndian.Uint32(buf[0:4])
+	retLen := binary.LittleEndian.Uint32(buf[4:8])
+
+	if retPtr == 0 || retLen == 0 {
+		return nil, fmt.Errorf("execute_wasm returned empty result")
+	}
+	defer dealloc.Call(ctx, uint64(retPtr), uint64(retLen))
+
+	resultBytes, ok := mod.Memory().Read(retPtr, retLen)
+	if !ok {
+		return nil, fmt.Errorf("failed to read result data")
+	}
+
+	out := make([]byte, len(resultBytes))
+	copy(out, resultBytes)
+	return out, nil
+}
