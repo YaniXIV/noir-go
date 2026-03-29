@@ -24,7 +24,9 @@ func CompileProgram(ctx context.Context, w *wasm.WasmManager, projectPath string
 	}
 	// Resolve and Serialize Project
 	r := fs.NewResolver()
-	r.Resolve(projectPath)
+	if err := r.Resolve(projectPath); err != nil {
+		return nil, fmt.Errorf("resolve noir project %q: %w", projectPath, err)
+	}
 	projectData, err := r.Serialize()
 	if err != nil {
 		return nil, fmt.Errorf("project serialization failed: %w", err)
@@ -40,7 +42,7 @@ func CompileProgram(ctx context.Context, w *wasm.WasmManager, projectPath string
 	if err != nil {
 		return nil, err
 	}
-	defer mod.Close(ctx)
+	defer mod.Close(context.Background())
 
 	// Call Bridge
 	resultPayload, err := callWasmCompile(ctx, mod, projectData)
@@ -65,4 +67,106 @@ func printLogs(outBuf *bytes.Buffer) {
 	fmt.Println("--- Start of wasm logs ---")
 	fmt.Println(outBuf.String())
 	fmt.Println("--- End of wasm logs ---")
+}
+
+func ExecuteProgram(ctx context.Context, w *wasm.WasmManager, comp *result.Compilation, inputs map[uint32][32]byte) (map[uint32][32]byte, error) {
+	var initialWitness []interface{}
+	for idx, val := range inputs {
+		v := val
+		initialWitness = append(initialWitness, []interface{}{idx, v[:]})
+	}
+
+	input := map[string]interface{}{
+		"acir_bytes":      comp.ACIR.Bytes,
+		"initial_witness": initialWitness,
+	}
+
+	packed, err := msgpack.Marshal(input)
+	if err != nil {
+		return nil, fmt.Errorf("marshal execute input: %w", err)
+	}
+
+	obj, err := w.Get(wasm.Compiler)
+	if err != nil || obj == nil {
+		return nil, fmt.Errorf("failed to get compiler wasm: %w", err)
+	}
+
+	mod, err := w.Instantiate(ctx, obj.Compiled, wazero.NewModuleConfig())
+	if err != nil {
+		return nil, err
+	}
+	defer mod.Close(context.Background())
+
+	resultPayload, err := callWasmExecute(ctx, mod, packed)
+	if err != nil {
+		return nil, fmt.Errorf("callWasmExecute: %w", err)
+	}
+
+	if len(resultPayload) == 0 {
+		return nil, fmt.Errorf("execute_wasm returned empty payload")
+	}
+
+	var raw map[string]interface{}
+	if err := msgpack.Unmarshal(resultPayload, &raw); err != nil {
+		return nil, fmt.Errorf("unmarshal execute result: %w", err)
+	}
+
+	witnessOut := make(map[uint32][32]byte)
+	entries, _ := raw["witness"].([]interface{})
+	for _, e := range entries {
+		pair, ok := e.([]interface{})
+		if !ok || len(pair) != 2 {
+			continue
+		}
+
+		var idx uint32
+		switch v := pair[0].(type) {
+		case int8:
+			idx = uint32(v)
+		case uint8:
+			idx = uint32(v)
+		case int16:
+			idx = uint32(v)
+		case uint16:
+			idx = uint32(v)
+		case int32:
+			idx = uint32(v)
+		case uint32:
+			idx = v
+		case int64:
+			idx = uint32(v)
+		case uint64:
+			idx = uint32(v)
+		default:
+			continue
+		}
+
+		rawBytes, ok := pair[1].([]interface{})
+		if !ok {
+			continue
+		}
+
+		if len(rawBytes) != 32 {
+			continue
+		}
+
+		var arr [32]byte
+		for i, b := range rawBytes {
+			switch v := b.(type) {
+			case int8:
+				arr[i] = byte(v)
+			case uint8:
+				arr[i] = v
+			case int64:
+				arr[i] = byte(v)
+			case uint64:
+				arr[i] = byte(v)
+			default:
+				arr[i] = 0
+			}
+		}
+		witnessOut[idx] = arr
+	}
+
+	return witnessOut, nil
 }

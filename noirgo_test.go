@@ -10,7 +10,7 @@ import (
 func TestNoirGo(t *testing.T) {
 	c, err := noirgo.Compile("internal/compiler/noirtest")
 	if err != nil {
-		panic(err)
+		t.Fatalf("Compile failed: %v", err)
 	}
 
 	fmt.Println("Compilation succesful!")

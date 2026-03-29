@@ -131,7 +131,7 @@ func (w *WasmManager) Get(t WasmType) (*WasmObject, error) {
 	inst.once.Do(func() {
 		inst.object, inst.err = loader(w)
 	})
-	return inst.object, nil
+	return inst.object, inst.err
 }
 
 func decompress(src []byte) ([]byte, error) {

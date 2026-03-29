@@ -1,6 +1,7 @@
 package wasm
 
 import (
+	"errors"
 	"testing"
 	"time"
 )
@@ -53,5 +54,25 @@ func TestWarmup(t *testing.T) {
 	err = w.Warmup()
 	if err != nil {
 		t.Fatalf("Module Warmup failed")
+	}
+}
+
+func TestGetPropagatesLoaderError(t *testing.T) {
+	expectedErr := errors.New("loader failed")
+	w := &WasmManager{
+		instances: make(map[WasmType]*wasmInstance),
+		loaders: map[WasmType]WasmLoader{
+			Compiler: func(*WasmManager) (*WasmObject, error) {
+				return nil, expectedErr
+			},
+		},
+	}
+
+	obj, err := w.Get(Compiler)
+	if !errors.Is(err, expectedErr) {
+		t.Fatalf("expected loader error %v, got %v", expectedErr, err)
+	}
+	if obj != nil {
+		t.Fatalf("expected nil object on loader failure")
 	}
 }

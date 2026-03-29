@@ -17,7 +17,7 @@ func CompileWithContext(ctx context.Context, projectPath string) (*result.Compil
 	if err != nil {
 		return nil, err
 	}
-	defer e.CloseWithContext(ctx) // or defer e.Close(ctx) if you prefer
+	defer e.CloseWithContext(context.Background())
 
 	return e.CompileWithContext(ctx, projectPath)
 }

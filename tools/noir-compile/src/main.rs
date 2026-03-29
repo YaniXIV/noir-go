@@ -1,6 +1,13 @@
+use acir::AcirField;
 use acir::circuit::Program;
 use acvm::acir::circuit::ExpressionWidth;
+use acvm::{
+    FieldElement,
+    acir::native_types::{Witness, WitnessMap},
+    pwg::{ACVM, ACVMStatus},
+};
 use base64::{Engine as _, engine::general_purpose};
+use bn254_blackbox_solver::Bn254BlackBoxSolver;
 use colored::Colorize;
 use nargo::parse_all;
 use noirc_abi::Abi;
@@ -310,4 +317,109 @@ pub fn compile_from_memory(source: &str) {
     let result = compile_main(&mut context, crate_id, &options, None);
 
     println!("{:?}", result);
+}
+
+#[derive(Serialize, Deserialize)]
+struct WireExecuteInput {
+    pub acir_bytes: Vec<u8>,
+    pub initial_witness: Vec<(u32, [u8; 32])>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct WireExecuteResult {
+    pub witness: Vec<(u32, [u8; 32])>,
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn execute_wasm(out: *mut WasmBuf, in_ptr: *mut u8, in_len: usize) {
+    let data: &[u8] = unsafe { std::slice::from_raw_parts(in_ptr, in_len) };
+
+    let input: WireExecuteInput = match rmp_serde::from_slice(data) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("execute_wasm: deserialize input failed: {e}");
+            unsafe {
+                *out = WasmBuf { ptr: 0, len: 0 };
+            }
+            return;
+        }
+    };
+
+    let program: acvm::acir::circuit::Program<FieldElement> =
+        match acvm::acir::circuit::Program::deserialize_program(&input.acir_bytes) {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("execute_wasm: deserialize program failed: {e:?}");
+                unsafe {
+                    *out = WasmBuf { ptr: 0, len: 0 };
+                }
+                return;
+            }
+        };
+
+    let circuit = &program.functions[0];
+
+    let mut initial_witness = WitnessMap::new();
+    for (idx, bytes) in input.initial_witness {
+        let fe = FieldElement::from_le_bytes_reduce(&bytes);
+        initial_witness.insert(Witness(idx), fe);
+    }
+
+    let solver = Bn254BlackBoxSolver(false);
+    let mut acvm = ACVM::new(
+        &solver,
+        &circuit.opcodes,
+        initial_witness,
+        &program.unconstrained_functions,
+        &circuit.assert_messages,
+    );
+
+    loop {
+        match acvm.solve() {
+            ACVMStatus::Solved => break,
+            ACVMStatus::InProgress => continue,
+            ACVMStatus::Failure(e) => {
+                eprintln!("execute_wasm: solver failure: {e}");
+                unsafe {
+                    *out = WasmBuf { ptr: 0, len: 0 };
+                }
+                return;
+            }
+            ACVMStatus::RequiresForeignCall(_) => {
+                use acvm::brillig_vm::brillig::ForeignCallResult;
+                acvm.resolve_pending_foreign_call(ForeignCallResult::default());
+            }
+            ACVMStatus::RequiresAcirCall(_) => {
+                eprintln!("execute_wasm: ACIR calls not supported yet");
+                unsafe {
+                    *out = WasmBuf { ptr: 0, len: 0 };
+                }
+                return;
+            }
+        }
+    }
+
+    let witness_map = acvm.finalize();
+    let mut witness_out = Vec::new();
+    for (w, fe) in witness_map.into_iter() {
+        witness_out.push((w.witness_index(), fe.to_be_bytes().try_into().unwrap()));
+    }
+
+    let result = WireExecuteResult {
+        witness: witness_out,
+    };
+    let mut buf = Vec::new();
+    result
+        .serialize(&mut rmp_serde::encode::Serializer::new(&mut buf).with_struct_map())
+        .expect("msgpack serialize failed");
+
+    let out_len = buf.len();
+    let out_ptr = alloc(out_len);
+    unsafe {
+        std::ptr::copy_nonoverlapping(buf.as_ptr(), out_ptr, out_len);
+        *out = WasmBuf {
+            ptr: out_ptr as u32,
+            len: out_len as u32,
+        };
+    }
 }
