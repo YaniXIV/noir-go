@@ -16,6 +16,12 @@ import (
 	"os"
 )
 
+const maxStderrSnippet = 4 << 10 // 4KB
+
+// wireEnvelopeVersion must match the "v" field write_envelope stamps on
+// every response in tools/noir-compile/src/main.rs.
+const wireEnvelopeVersion = 1
+
 func CompileProgram(ctx context.Context, w *wasm.WasmManager, projectPath string) (*result.Compilation, error) {
 	// make sure the filepath actually exists, if not exit before doing expensive calls.
 	_, err := os.Stat(projectPath)
@@ -38,7 +44,8 @@ func CompileProgram(ctx context.Context, w *wasm.WasmManager, projectPath string
 		return nil, fmt.Errorf("failed to get compiler wasm: %v", err)
 	}
 
-	mod, err := w.Instantiate(ctx, obj.Compiled, wazero.NewModuleConfig())
+	var stderr bytes.Buffer
+	mod, err := w.Instantiate(ctx, obj.Compiled, wazero.NewModuleConfig().WithStderr(&stderr))
 	if err != nil {
 		return nil, err
 	}
@@ -50,9 +57,13 @@ func CompileProgram(ctx context.Context, w *wasm.WasmManager, projectPath string
 		return nil, err
 	}
 
-	// Unmarshal
+	payload, err := decodeEnvelope(resultPayload, "noir compiler", &stderr)
+	if err != nil {
+		return nil, err
+	}
+
 	var wire WireCompileResult
-	if err := msgpack.Unmarshal(resultPayload, &wire); err != nil {
+	if err := msgpack.Unmarshal(payload, &wire); err != nil {
 		return nil, fmt.Errorf("msgpack unmarshal failed: %w", err)
 	}
 	comp, err := wire.processCompilation()
@@ -63,10 +74,47 @@ func CompileProgram(ctx context.Context, w *wasm.WasmManager, projectPath string
 	return comp, nil
 }
 
-func printLogs(outBuf *bytes.Buffer) {
-	fmt.Println("--- Start of wasm logs ---")
-	fmt.Println(outBuf.String())
-	fmt.Println("--- End of wasm logs ---")
+// decodeEnvelope unwraps a WireMessage envelope (see
+// tools/noir-compile/src/main.rs's write_envelope): on success it returns
+// the raw payload bytes for the caller to unmarshal further; on failure it
+// decodes the WireError payload and returns it as a Go error, with a
+// truncated capture of the wasm module's stderr appended for extra context
+// when available.
+func decodeEnvelope(resultPayload []byte, context string, stderr *bytes.Buffer) ([]byte, error) {
+	if len(resultPayload) == 0 {
+		return nil, fmt.Errorf("%s: wasm returned an empty result (allocation failure?)%s", context, stderrSnippet(stderr))
+	}
+
+	var envelope WireEnvelope
+	if err := msgpack.Unmarshal(resultPayload, &envelope); err != nil {
+		return nil, fmt.Errorf("%s: malformed wasm response: %w", context, err)
+	}
+	if envelope.Version != wireEnvelopeVersion {
+		return nil, fmt.Errorf("%s: unsupported wasm response version %d (expected %d) -- the embedded wasm binary may be out of sync with this build", context, envelope.Version, wireEnvelopeVersion)
+	}
+
+	if !envelope.Ok {
+		var wireErr WireError
+		if err := msgpack.Unmarshal(envelope.Payload, &wireErr); err != nil {
+			return nil, fmt.Errorf("%s: failed and the error payload itself was malformed: %w", context, err)
+		}
+		return nil, fmt.Errorf("%s: %s%s", context, wireErr.Message, stderrSnippet(stderr))
+	}
+
+	return envelope.Payload, nil
+}
+
+// stderrSnippet returns a " (stderr: ...)" suffix with a truncated capture
+// of the wasm module's stderr, or "" if nothing was captured.
+func stderrSnippet(stderr *bytes.Buffer) string {
+	if stderr == nil || stderr.Len() == 0 {
+		return ""
+	}
+	s := stderr.String()
+	if len(s) > maxStderrSnippet {
+		s = s[:maxStderrSnippet] + "... (truncated)"
+	}
+	return fmt.Sprintf(" (stderr: %s)", s)
 }
 
 func ExecuteProgram(ctx context.Context, w *wasm.WasmManager, comp *result.Compilation, inputs map[uint32][32]byte) (map[uint32][32]byte, error) {
@@ -91,7 +139,8 @@ func ExecuteProgram(ctx context.Context, w *wasm.WasmManager, comp *result.Compi
 		return nil, fmt.Errorf("failed to get compiler wasm: %w", err)
 	}
 
-	mod, err := w.Instantiate(ctx, obj.Compiled, wazero.NewModuleConfig())
+	var stderr bytes.Buffer
+	mod, err := w.Instantiate(ctx, obj.Compiled, wazero.NewModuleConfig().WithStderr(&stderr))
 	if err != nil {
 		return nil, err
 	}
@@ -102,12 +151,13 @@ func ExecuteProgram(ctx context.Context, w *wasm.WasmManager, comp *result.Compi
 		return nil, fmt.Errorf("callWasmExecute: %w", err)
 	}
 
-	if len(resultPayload) == 0 {
-		return nil, fmt.Errorf("execute_wasm returned empty payload")
+	payload, err := decodeEnvelope(resultPayload, "noir execute", &stderr)
+	if err != nil {
+		return nil, err
 	}
 
 	var raw map[string]interface{}
-	if err := msgpack.Unmarshal(resultPayload, &raw); err != nil {
+	if err := msgpack.Unmarshal(payload, &raw); err != nil {
 		return nil, fmt.Errorf("unmarshal execute result: %w", err)
 	}
 
