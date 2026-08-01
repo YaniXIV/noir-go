@@ -16,3 +16,6 @@ testdata
 
 # Local reference codebases (own git repos), not part of this project
 ref/
+
+CODEBASE_REVIEW.md
+REVIEW_REPORT.md
