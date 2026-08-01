@@ -2,7 +2,10 @@ package noirgo
 
 import (
 	"context"
+
+	"github.com/YaniXIV/noir-go/internal/compiler"
 	"github.com/YaniXIV/noir-go/internal/wasm"
+	"github.com/YaniXIV/noir-go/result"
 )
 
 // Engine owns the WASM runtime used to compile Noir projects.
@@ -40,4 +43,14 @@ func (e *Engine) WarmupModules() error {
 		return err
 	}
 	return nil
+}
+
+// Execute runs a compiled Noir program using a background context.
+func (e *Engine) Execute(comp *result.Compilation, inputs map[uint32][32]byte) (map[uint32][32]byte, error) {
+	return e.ExecuteWithContext(context.Background(), comp, inputs)
+}
+
+// ExecuteWithContext runs a compiled Noir program with the provided context.
+func (e *Engine) ExecuteWithContext(ctx context.Context, comp *result.Compilation, inputs map[uint32][32]byte) (map[uint32][32]byte, error) {
+	return compiler.ExecuteProgram(ctx, e.wm, comp, inputs)
 }

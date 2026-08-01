@@ -120,11 +120,9 @@ func callWasmExecute(ctx context.Context, mod api.Module, input []byte) ([]byte,
 	}
 	retPtr := binary.LittleEndian.Uint32(buf[0:4])
 	retLen := binary.LittleEndian.Uint32(buf[4:8])
-
-	if retPtr == 0 || retLen == 0 {
-		return nil, fmt.Errorf("execute_wasm returned empty result")
+	if retLen > 0 {
+		defer dealloc.Call(ctx, uint64(retPtr), uint64(retLen))
 	}
-	defer dealloc.Call(ctx, uint64(retPtr), uint64(retLen))
 
 	resultBytes, ok := mod.Memory().Read(retPtr, retLen)
 	if !ok {

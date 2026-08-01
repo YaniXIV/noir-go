@@ -10,4 +10,12 @@
 //		log.Fatal(err)
 //	}
 //	acir := comp.ACIR
+//
+// To execute a compiled program:
+//
+//	witness, err := noirgo.Execute(comp, inputs)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	_ = witness
 package noirgo

@@ -1,23 +1,18 @@
 use acir::AcirField;
 use acir::circuit::Program;
-use acvm::acir::circuit::ExpressionWidth;
 use acvm::{
     FieldElement,
     acir::native_types::{Witness, WitnessMap},
     pwg::{ACVM, ACVMStatus},
 };
-use base64::{Engine as _, engine::general_purpose};
 use bn254_blackbox_solver::Bn254BlackBoxSolver;
 use colored::Colorize;
 use nargo::parse_all;
-use noirc_abi::Abi;
-use noirc_artifacts::program;
 use noirc_driver::{CompileOptions, compile_main, file_manager_with_stdlib, prepare_crate};
 use noirc_frontend::hir::Context;
 use rmp_serde::encode::Serializer;
-use rmp_serde::encode::to_vec;
 use serde::{Deserialize, Serialize};
-use serde_bytes::ByteBuf;
+use std::any::Any;
 use std::collections::HashMap;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::Path;
@@ -50,13 +45,100 @@ pub struct WireMessage {
     #[serde(rename = "v")]
     pub version: u16,
 
-    /// Message kind tag, e.g. "compile_ok", "compile_err".
+    /// True if `payload` decodes to the success struct; false if it decodes
+    /// to a WireError.
     #[serde(rename = "k")]
     pub ok: bool,
 
     /// Msgpack bytes for the concrete payload struct.
     #[serde(with = "serde_bytes", rename = "p")]
     pub payload: Vec<u8>,
+}
+
+/// Error payload carried inside a WireMessage when `ok == false`.
+#[derive(Serialize, Deserialize)]
+struct WireError {
+    pub message: String,
+}
+
+/// Encodes `payload` (already-msgpack-encoded bytes of either the success
+/// struct or a WireError) into a WireMessage envelope, allocates guest
+/// memory for it, and writes the resulting pointer/length into `out`.
+///
+/// Every exit path of compile_wasm/execute_wasm goes through this (via
+/// write_error/write_success below) so a Go caller always gets a valid,
+/// decodable buffer -- including on failure. `zero_buf` is reserved solely
+/// for the case where we can't even allocate/serialize the envelope itself.
+fn zero_buf(out: *mut WasmBuf) {
+    unsafe {
+        *out = WasmBuf { ptr: 0, len: 0 };
+    }
+}
+
+fn write_envelope(out: *mut WasmBuf, ok: bool, payload: Vec<u8>) {
+    let msg = WireMessage {
+        version: 1,
+        ok,
+        payload,
+    };
+    let mut buf = Vec::new();
+    if msg
+        .serialize(&mut Serializer::new(&mut buf).with_struct_map())
+        .is_err()
+    {
+        zero_buf(out);
+        return;
+    }
+
+    let out_len = buf.len();
+    if out_len == 0 {
+        zero_buf(out);
+        return;
+    }
+    let out_ptr = alloc(out_len);
+    if out_ptr.is_null() {
+        zero_buf(out);
+        return;
+    }
+    unsafe {
+        ptr::copy_nonoverlapping(buf.as_ptr(), out_ptr, out_len);
+        *out = WasmBuf {
+            ptr: out_ptr as u32,
+            len: out_len as u32,
+        };
+    }
+}
+
+fn write_error(out: *mut WasmBuf, message: String) {
+    // The message is already carried structurally in the WireError payload,
+    // so it isn't also echoed to stderr here -- stderr capture on the Go
+    // side is for genuinely separate diagnostics (e.g. Rust's own panic
+    // hook output), not a duplicate of this string.
+    let err = WireError { message };
+    let mut payload = Vec::new();
+    match err.serialize(&mut Serializer::new(&mut payload).with_struct_map()) {
+        Ok(()) => write_envelope(out, false, payload),
+        Err(_) => zero_buf(out),
+    }
+}
+
+fn write_success<T: Serialize>(out: *mut WasmBuf, value: &T) {
+    let mut payload = Vec::new();
+    match value.serialize(&mut Serializer::new(&mut payload).with_struct_map()) {
+        Ok(()) => write_envelope(out, true, payload),
+        Err(e) => write_error(out, format!("failed to serialize result: {e}")),
+    }
+}
+
+/// Best-effort extraction of a message from a caught panic payload.
+fn panic_message(payload: Box<dyn Any + Send>) -> String {
+    if let Some(s) = payload.downcast_ref::<&str>() {
+        s.to_string()
+    } else if let Some(s) = payload.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        "panic occurred inside compiler (no message)".to_string()
+    }
 }
 
 fn main() {
@@ -80,8 +162,7 @@ fn main() {
 
     let mut bytes = rmp_serde::to_vec(&my_map).unwrap();
     println!("Serialized bytes: {bytes:?}");
-    let ptr: *const u8 = bytes.as_mut_ptr();
-    //compile_wasm(ptr, bytes.len());
+    let _ptr: *const u8 = bytes.as_mut_ptr();
 
     let x = alloc(128);
     dealloc(x, 128);
@@ -109,11 +190,7 @@ pub extern "C" fn test_compile_wasm_go() {
 pub extern "C" fn compile_wasm(out: *mut WasmBuf, in_ptr: *mut u8, in_len: usize) {
     println!("made it into funciton Rust side");
     if in_ptr.is_null() || in_len == 0 {
-        println!("{}", "Input buffer is empty.".red());
-        unsafe {
-            (*out).ptr = 0;
-            (*out).len = 0;
-        }
+        write_error(out, "Input buffer is empty.".to_string());
         return;
     }
 
@@ -121,11 +198,7 @@ pub extern "C" fn compile_wasm(out: *mut WasmBuf, in_ptr: *mut u8, in_len: usize
     let map: HashMap<String, String> = match rmp_serde::from_slice(data) {
         Ok(map) => map,
         Err(err) => {
-            println!("{} {err}", "Failed to deserialize input.".red());
-            unsafe {
-                (*out).ptr = 0;
-                (*out).len = 0;
-            }
+            write_error(out, format!("Failed to deserialize input: {err}"));
             return;
         }
     };
@@ -153,11 +226,7 @@ pub extern "C" fn compile_wasm(out: *mut WasmBuf, in_ptr: *mut u8, in_len: usize
     let crate_name = match crate_name {
         Some(name) => name,
         None => {
-            println!("{}", "Crate name is empty".red());
-            unsafe {
-                (*out).ptr = 0;
-                (*out).len = 0;
-            }
+            write_error(out, "Crate name is empty".to_string());
             return;
         }
     };
@@ -173,62 +242,33 @@ pub extern "C" fn compile_wasm(out: *mut WasmBuf, in_ptr: *mut u8, in_len: usize
         compile_inner(&mut context, &crate_name, &options)
     }));
 
-    //Hopefully lets us catch panics.
-    //Although ive been having an issue before where panics were not caught.
-    //Could be a wasm rust thing, like how this specific panic in
-    //prepare_crate throws and how it unwinds.
-    //Ill maybe just panic later to test it.
+    // Panics are caught here so a broken/unexpected input can never trap the
+    // whole WASM instance -- it always comes back as a normal Go error with
+    // whatever message we could extract from the panic payload instead.
     let wire = match caught {
         Ok(inner) => match inner {
             Ok(wire) => wire,
             Err(msg) => {
-                eprintln!("{msg}");
-                unsafe {
-                    *out = WasmBuf { ptr: 0, len: 0 };
-                }
+                write_error(out, msg);
                 return;
             }
         },
-        Err(_) => {
-            eprintln!("Panic occured inside compiler");
-            unsafe {
-                *out = WasmBuf { ptr: 0, len: 0 };
-            }
+        Err(panic_payload) => {
+            write_error(
+                out,
+                format!(
+                    "Panic occurred inside compiler: {}",
+                    panic_message(panic_payload)
+                ),
+            );
             return;
         }
     };
-    let mut buf = Vec::new();
 
-    wire.serialize(&mut Serializer::new(&mut buf).with_struct_map())
-        .expect("msgpack serialization failed");
-    let msgpack_bytes = buf;
-    let out_len = msgpack_bytes.len();
-    if out_len == 0 {
-        unsafe {
-            *out = WasmBuf { ptr: 0, len: 0 };
-        }
-        return;
-    }
-    let out_ptr = alloc(out_len);
-    if out_ptr.is_null() {
-        unsafe {
-            *out = WasmBuf { ptr: 0, len: 0 };
-        }
-        return;
-    }
-    unsafe {
-        ptr::copy_nonoverlapping(msgpack_bytes.as_ptr(), out_ptr, out_len);
-    }
-    unsafe {
-        *out = WasmBuf {
-            ptr: out_ptr as u32,
-            len: out_len as u32,
-        };
-    }
-    let json = serde_json::to_string_pretty(&wire).expect("failed to serialize");
-
+    let json = serde_json::to_string_pretty(&wire).unwrap_or_default();
     println!("{}", json);
-    return;
+
+    write_success(out, &wire);
 }
 
 fn compile_inner(
@@ -330,32 +370,13 @@ struct WireExecuteResult {
     pub witness: Vec<(u32, [u8; 32])>,
 }
 
-#[unsafe(no_mangle)]
-pub extern "C" fn execute_wasm(out: *mut WasmBuf, in_ptr: *mut u8, in_len: usize) {
-    let data: &[u8] = unsafe { std::slice::from_raw_parts(in_ptr, in_len) };
-
-    let input: WireExecuteInput = match rmp_serde::from_slice(data) {
-        Ok(v) => v,
-        Err(e) => {
-            eprintln!("execute_wasm: deserialize input failed: {e}");
-            unsafe {
-                *out = WasmBuf { ptr: 0, len: 0 };
-            }
-            return;
-        }
-    };
+fn execute_inner(data: &[u8]) -> Result<WireExecuteResult, String> {
+    let input: WireExecuteInput = rmp_serde::from_slice(data)
+        .map_err(|e| format!("execute_wasm: deserialize input failed: {e}"))?;
 
     let program: acvm::acir::circuit::Program<FieldElement> =
-        match acvm::acir::circuit::Program::deserialize_program(&input.acir_bytes) {
-            Ok(p) => p,
-            Err(e) => {
-                eprintln!("execute_wasm: deserialize program failed: {e:?}");
-                unsafe {
-                    *out = WasmBuf { ptr: 0, len: 0 };
-                }
-                return;
-            }
-        };
+        acvm::acir::circuit::Program::deserialize_program(&input.acir_bytes)
+            .map_err(|e| format!("execute_wasm: deserialize program failed: {e:?}"))?;
 
     let circuit = &program.functions[0];
 
@@ -379,22 +400,14 @@ pub extern "C" fn execute_wasm(out: *mut WasmBuf, in_ptr: *mut u8, in_len: usize
             ACVMStatus::Solved => break,
             ACVMStatus::InProgress => continue,
             ACVMStatus::Failure(e) => {
-                eprintln!("execute_wasm: solver failure: {e}");
-                unsafe {
-                    *out = WasmBuf { ptr: 0, len: 0 };
-                }
-                return;
+                return Err(format!("execute_wasm: solver failure: {e}"));
             }
             ACVMStatus::RequiresForeignCall(_) => {
                 use acvm::brillig_vm::brillig::ForeignCallResult;
                 acvm.resolve_pending_foreign_call(ForeignCallResult::default());
             }
             ACVMStatus::RequiresAcirCall(_) => {
-                eprintln!("execute_wasm: ACIR calls not supported yet");
-                unsafe {
-                    *out = WasmBuf { ptr: 0, len: 0 };
-                }
-                return;
+                return Err("execute_wasm: ACIR calls not supported yet".to_string());
             }
         }
     }
@@ -402,24 +415,48 @@ pub extern "C" fn execute_wasm(out: *mut WasmBuf, in_ptr: *mut u8, in_len: usize
     let witness_map = acvm.finalize();
     let mut witness_out = Vec::new();
     for (w, fe) in witness_map.into_iter() {
-        witness_out.push((w.witness_index(), fe.to_be_bytes().try_into().unwrap()));
+        let bytes: [u8; 32] = fe
+            .to_be_bytes()
+            .try_into()
+            .map_err(|_| "execute_wasm: witness value was not 32 bytes".to_string())?;
+        witness_out.push((w.witness_index(), bytes));
     }
 
-    let result = WireExecuteResult {
+    Ok(WireExecuteResult {
         witness: witness_out,
-    };
-    let mut buf = Vec::new();
-    result
-        .serialize(&mut rmp_serde::encode::Serializer::new(&mut buf).with_struct_map())
-        .expect("msgpack serialize failed");
+    })
+}
 
-    let out_len = buf.len();
-    let out_ptr = alloc(out_len);
-    unsafe {
-        std::ptr::copy_nonoverlapping(buf.as_ptr(), out_ptr, out_len);
-        *out = WasmBuf {
-            ptr: out_ptr as u32,
-            len: out_len as u32,
-        };
+#[unsafe(no_mangle)]
+pub extern "C" fn execute_wasm(out: *mut WasmBuf, in_ptr: *mut u8, in_len: usize) {
+    if in_ptr.is_null() || in_len == 0 {
+        write_error(out, "execute_wasm: input buffer is empty".to_string());
+        return;
     }
+    let data: &[u8] = unsafe { std::slice::from_raw_parts(in_ptr, in_len) };
+
+    // Panics (e.g. from an unexpected witness/program shape) are caught here
+    // for the same reason as in compile_wasm: never trap the WASM instance,
+    // always come back as a normal Go error.
+    let caught = panic::catch_unwind(AssertUnwindSafe(|| execute_inner(data)));
+
+    let wire = match caught {
+        Ok(Ok(wire)) => wire,
+        Ok(Err(msg)) => {
+            write_error(out, msg);
+            return;
+        }
+        Err(panic_payload) => {
+            write_error(
+                out,
+                format!(
+                    "Panic occurred inside solver: {}",
+                    panic_message(panic_payload)
+                ),
+            );
+            return;
+        }
+    };
+
+    write_success(out, &wire);
 }
